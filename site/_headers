@@ -1,0 +1,6 @@
+/panel/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+
+/panel/
+  Cache-Control: no-store

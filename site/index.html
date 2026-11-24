@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="Content-Security-Policy" content="form-action 'none'; connect-src 'self'; base-uri 'none'; object-src 'none'">
+  <title>Datos de envío Shalom | YIWU Center</title>
+  <link rel="icon" href="yiwu-logo.jpg">
+  <link rel="preload" href="manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="formulario.css">
+  <script src="yiwu-agencias-shalom.js" defer></script>
+  <script src="formulario.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img src="yiwu-logo.jpg" alt="" width="42" height="42">
+        <strong>YIWU <span>Center</span></strong>
+      </div>
+      <a class="header-channel" href="https://wa.me/?text=Hola%2C%20necesito%20ayuda%20con%20el%20formulario%20de%20env%C3%ADo%20de%20YIWU%20Center." target="_blank" rel="noopener noreferrer"><i class="icon icon-chat" aria-hidden="true"></i><span>Ayuda por WhatsApp</span></a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero" aria-labelledby="titulo-formulario">
+      <div class="hero-image" aria-hidden="true">
+        <img src="hero-despacho-yiwu.jpg" alt="" fetchpriority="high">
+      </div>
+      <div class="hero-content">
+        <div class="hero-carrier">
+          <img src="shalom-logo.svg" alt="Shalom" width="132" height="14">
+          <span>Recojo en agencia</span>
+        </div>
+        <h1 id="titulo-formulario">Datos de envío</h1>
+        <p>Elige tu agencia y prepara el mensaje para tu asesor.</p>
+      </div>
+    </section>
+
+    <noscript><p class="notice">Activa JavaScript o pide ayuda a tu asesor para elegir una agencia.</p></noscript>
+
+    <form id="despacho" autocomplete="off" hidden>
+      <div class="form-grid">
+        <section class="card carrier-card" aria-labelledby="titulo-agencia">
+          <div class="card-heading">
+            <span class="card-icon" aria-hidden="true"><i class="icon icon-pin"></i></span>
+            <h2 id="titulo-agencia">Agencia de destino</h2>
+          </div>
+
+          <div id="buscador">
+            <label for="busqueda">Ciudad, distrito o agencia</label>
+            <div class="search-field">
+              <i class="icon icon-search" aria-hidden="true"></i>
+              <input id="busqueda" type="search" placeholder="Ej. Huancayo" spellcheck="false"
+                     aria-describedby="estado-busqueda" aria-controls="resultados" enterkeyhint="search">
+            </div>
+            <div class="search-meta">
+              <p id="estado-busqueda" class="hint" role="status">Escribe al menos 2 caracteres.</p>
+              <span id="ayuda-desplazamiento" class="scroll-hint" hidden>Desplázate para ver más</span>
+            </div>
+            <ul id="resultados" class="agency-results" tabindex="0" aria-label="Agencias encontradas" hidden></ul>
+          </div>
+
+          <div id="agencia-elegida" class="selected-agency" role="group" aria-labelledby="agencia-nombre"
+               aria-describedby="agencia-ubicacion agencia-direccion" tabindex="-1" hidden>
+            <div class="selected-details">
+              <span class="selected-marker" aria-hidden="true"></span>
+              <div>
+                <p id="agencia-nombre" class="selected-name"></p>
+                <p id="agencia-ubicacion" class="agency-location"></p>
+                <p id="agencia-direccion" class="agency-address"></p>
+                <p id="agencia-referencia" class="agency-address" hidden><strong>Referencia</strong> <span></span></p>
+              </div>
+            </div>
+            <div class="agency-actions">
+              <button id="cambiar-agencia" type="button" class="text-button">Cambiar agencia</button>
+              <a id="agencia-mapa" class="text-button map-link" target="_blank" rel="noopener noreferrer"
+                 aria-label="Ver mapa de la agencia en Google Maps" hidden>Ver mapa</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="titulo-destinatario">
+          <div class="card-heading">
+            <span class="card-icon" aria-hidden="true"><i class="icon icon-person"></i></span>
+            <h2 id="titulo-destinatario">Persona que recoge</h2>
+          </div>
+          <div class="fields">
+            <div>
+              <label for="nombre">Nombres y apellidos</label>
+              <div class="field-control">
+                <input id="nombre" type="text" maxlength="120" placeholder="Tal como figuran en el DNI" required>
+                <span class="field-check" aria-hidden="true" hidden></span>
+                <span class="field-status" role="status"></span>
+              </div>
+            </div>
+            <div class="fields-inline">
+              <div>
+                <label for="dni">DNI</label>
+                <div class="field-control">
+                  <input id="dni" type="text" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos"
+                         title="Ingresa exactamente 8 dígitos" required>
+                  <span class="field-check" aria-hidden="true" hidden></span>
+                  <span class="field-status" role="status"></span>
+                </div>
+              </div>
+              <div>
+                <label for="celular">Celular</label>
+                <div class="field-control">
+                  <input id="celular" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" placeholder="9 dígitos"
+                         title="Ingresa 9 dígitos. El número empieza con 9" required>
+                  <span class="field-check" aria-hidden="true" hidden></span>
+                  <span class="field-status" role="status"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="revisar" type="submit" class="primary-button"><i class="icon icon-document" aria-hidden="true"></i> Ver resumen</button>
+          </div>
+        </section>
+      </div>
+    </form>
+
+    <dialog id="revision" aria-labelledby="titulo-revision" aria-describedby="instrucciones-revision">
+      <div class="review-content">
+        <header class="review-header">
+          <h2 id="titulo-revision">Resumen de envío</h2>
+          <img src="shalom-logo.svg" alt="Shalom" width="96" height="10">
+        </header>
+        <div class="review-details">
+          <section class="review-panel review-destination" aria-labelledby="resumen-destino-titulo">
+            <h3 id="resumen-destino-titulo"><i class="icon icon-pin" aria-hidden="true"></i> Agencia de destino</h3>
+            <p id="resumen-agencia" class="review-value"></p>
+            <dl class="review-list">
+              <div><dt>Ubicación</dt><dd id="resumen-ubicacion"></dd></div>
+              <div><dt>Dirección</dt><dd id="resumen-direccion"></dd></div>
+              <div id="resumen-referencia" hidden><dt>Referencia</dt><dd></dd></div>
+            </dl>
+          </section>
+          <section class="review-panel" aria-labelledby="resumen-persona-titulo">
+            <h3 id="resumen-persona-titulo"><i class="icon icon-person" aria-hidden="true"></i> Persona que recoge</h3>
+            <p id="resumen-nombre" class="review-value"></p>
+            <dl class="review-list review-contact">
+              <div><dt>DNI</dt><dd id="resumen-dni"></dd></div>
+              <div><dt>Celular</dt><dd id="resumen-celular"></dd></div>
+            </dl>
+          </section>
+        </div>
+        <footer class="review-footer">
+          <p id="instrucciones-revision" class="review-note">Al confirmar, guardaremos el pedido y abriremos WhatsApp con el mensaje listo para enviar.</p>
+          <p id="estado-pedido" class="review-note" role="status" hidden></p>
+          <div class="review-actions">
+            <button id="confirmar-pedido" type="button" class="primary-button"><i class="icon icon-chat" aria-hidden="true"></i> <span>Guardar y abrir WhatsApp</span></button>
+            <a id="abrir-whatsapp" class="primary-button" hidden><i class="icon icon-chat" aria-hidden="true"></i> Abrir WhatsApp</a>
+            <button id="editar" type="button" class="text-button">Volver a editar</button>
+          </div>
+        </footer>
+      </div>
+    </dialog>
+  </main>
+  <footer class="site-credit">Desarrollado por <a href="https://sivansolutions.com/" target="_blank" rel="noopener noreferrer">Sivan Solutions</a></footer>
+</body>
+</html>

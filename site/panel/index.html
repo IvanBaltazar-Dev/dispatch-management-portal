@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; form-action 'none'; base-uri 'none'; object-src 'none'">
+  <title>Pedidos de despacho | YIWU Center</title>
+  <link rel="icon" href="/yiwu-logo.jpg">
+  <link rel="stylesheet" href="/panel/panel.css">
+  <script src="/panel/jszip.min.js" defer></script>
+  <script src="/panel/panel.js" type="module"></script>
+</head>
+<body>
+  <header id="barra-panel" class="topbar" hidden>
+    <div class="container topbar-inner">
+      <div class="topbar-context">
+        <div class="brand"><img src="/yiwu-logo.jpg" width="41" height="41" alt=""><strong>YIWU Center</strong></div>
+        <span class="topbar-section">Panel de operaciones</span>
+      </div>
+      <button id="salir" type="button" class="button ghost"><i class="icon logout-icon" aria-hidden="true"></i>Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <p id="estado-inicial" class="boot-message" role="status">Cargando panel…</p>
+    <noscript><p class="boot-message">Activa JavaScript para ingresar al panel.</p></noscript>
+
+    <section id="acceso" class="login-shell" aria-labelledby="titulo-login" hidden>
+      <div class="login-main">
+        <div class="login-content">
+          <header class="login-heading">
+            <img class="login-brand" src="/yiwu-logo.jpg" width="144" height="144" alt="YIWU Center">
+            <p class="login-context">Panel de despachos</p>
+            <h1 id="titulo-login">Acceso a <span>YIWU</span></h1>
+            <p>Ingresa con tu cuenta para preparar y dar seguimiento a tus pedidos.</p>
+          </header>
+          <form id="login">
+            <label class="field" for="usuario">Usuario</label>
+            <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" placeholder="Nombre de usuario" required>
+            <label class="field" for="clave">Contraseña</label>
+            <div class="password-field">
+              <input id="clave" name="password" type="password" autocomplete="current-password" maxlength="512" required>
+              <button id="ver-clave" type="button" class="icon-button" aria-label="Mostrar contraseña"><i class="icon eye-icon" aria-hidden="true"></i></button>
+            </div>
+            <p id="error-login" class="notice error" role="alert" hidden></p>
+            <button id="ingresar" type="submit" class="button primary login-submit">
+              <span class="login-submit-label">Ingresar</span><i class="icon arrow-icon" aria-hidden="true"></i><i class="login-spinner" aria-hidden="true"></i>
+            </button>
+            <p id="estado-login" class="sr-only" role="status"></p>
+          </form>
+          <aside class="security-note" aria-label="Seguridad del acceso">
+            <i class="icon lock-icon" aria-hidden="true"></i>
+            <div><strong>Acceso privado</strong><p id="seguridad">Reservado a la cuenta autorizada de YIWU.</p></div>
+          </aside>
+        </div>
+      </div>
+      <footer class="site-credit login-credit">Desarrollado por <a href="https://sivansolutions.com/" target="_blank" rel="noopener noreferrer">Sivan Solutions</a></footer>
+    </section>
+
+    <section id="panel" class="container workspace" aria-labelledby="titulo-panel" hidden>
+      <header class="workspace-heading">
+        <div><h1 id="titulo-panel">Pedidos de despacho</h1><p>Prepara los bultos, exporta el lote y confirma su salida.</p></div>
+        <div class="workspace-tools">
+          <img class="workspace-carrier" src="/shalom-logo.svg" width="86" height="9" alt="Shalom">
+          <button id="actualizar" type="button" class="button secondary refresh-trigger" aria-busy="false"><i class="icon refresh-icon" aria-hidden="true"></i>Actualizar</button>
+        </div>
+      </header>
+
+      <section class="orders-card" aria-label="Pedidos registrados">
+        <div class="orders-toolbar">
+          <div id="filtro-etapa" class="stage-filter" role="group" aria-label="Estado del pedido">
+            <button type="button" data-stage="" aria-pressed="true">Todos</button>
+            <button type="button" data-stage="recibido" aria-pressed="false"><i class="stage-signal received" aria-hidden="true"></i>Recibidos</button>
+            <button type="button" data-stage="preparado" aria-pressed="false"><i class="stage-signal prepared" aria-hidden="true"></i>Preparados</button>
+            <button type="button" data-stage="enviado" aria-pressed="false"><i class="stage-signal sent" aria-hidden="true"></i>Enviados</button>
+          </div>
+          <form id="filtros-pedidos" class="orders-filters" role="search" aria-label="Buscar pedidos">
+            <div class="filter-search">
+              <label class="sr-only" for="buscar-pedido">Buscar por agencia, ciudad, pedido o destinatario</label>
+              <div class="input-with-icon"><i class="icon search-icon" aria-hidden="true"></i><input id="buscar-pedido" type="search" placeholder="Agencia o ciudad" maxlength="120" autocomplete="off"></div>
+            </div>
+            <label class="sr-only" for="filtro-departamento">Departamento</label>
+            <select id="filtro-departamento"><option value="">Todo el Perú</option></select>
+            <button id="limpiar-filtros" type="button" class="button ghost" hidden>Limpiar filtros</button>
+          </form>
+        </div>
+        <div class="date-toolbar">
+          <div class="date-options">
+            <span id="titulo-fecha" class="field"><i class="icon calendar-icon" aria-hidden="true"></i>Fecha de registro</span>
+            <div id="filtro-fecha" class="date-filter" role="group" aria-labelledby="titulo-fecha">
+              <button type="button" data-period="hoy" aria-pressed="false">Hoy</button>
+              <button type="button" data-period="ayer" aria-pressed="false">Ayer</button>
+              <button id="abrir-rango" type="button" data-period="rango" aria-controls="filtro-rango" aria-expanded="false" aria-pressed="false">Rango de fechas</button>
+            </div>
+            <span id="rango-aplicado" class="range-summary" hidden></span>
+            <button id="limpiar-fecha" class="button ghost" type="button" hidden>Quitar fecha</button>
+          </div>
+          <form id="filtro-rango" class="date-range" aria-label="Rango de fechas" hidden>
+            <div><label for="fecha-desde" class="field">Desde</label><input id="fecha-desde" type="date" min="0001-01-01" max="9999-12-31" required></div>
+            <div><label for="fecha-hasta" class="field">Hasta</label><input id="fecha-hasta" type="date" min="0001-01-01" max="9999-12-31" required></div>
+            <button type="submit" class="button secondary">Aplicar rango</button>
+          </form>
+        </div>
+        <p id="estado-panel" class="notice panel-notice" role="status" hidden></p>
+        <div class="orders-results">
+          <div id="resultados-pedidos" class="table-scroll" tabindex="0" role="region" aria-label="Tabla de pedidos">
+            <table role="table">
+              <thead role="rowgroup"><tr role="row">
+                <th scope="col" class="cell-select"><label><input id="marcar-todos" type="checkbox" aria-label="Seleccionar pedidos cargados"><span class="mobile-select-label" aria-hidden="true">Seleccionar pedidos cargados</span></label></th>
+                <th scope="col">Pedido</th><th scope="col">Destinatario</th><th scope="col">Agencia de destino</th><th scope="col">Mercadería</th><th scope="col">Estado</th><th scope="col" class="order-action">Acciones</th>
+              </tr></thead>
+              <tbody id="filas" role="rowgroup"></tbody>
+            </table>
+          </div>
+          <div id="sin-pedidos" class="empty" hidden><span class="empty-icon"><i class="icon box-icon" aria-hidden="true"></i></span><h2 id="sin-pedidos-titulo">Aún no hay pedidos</h2><p id="sin-pedidos-texto">Los pedidos aparecerán aquí cuando el cliente complete el formulario.</p></div>
+          <div id="pie-pedidos" class="orders-feed" hidden>
+            <p id="conteo-pedidos" role="status"></p>
+            <button id="reintentar-pedidos" class="button secondary" type="button" hidden>Reintentar</button>
+          </div>
+          <div id="acciones-lote" class="batch-actions" role="group" aria-label="Acciones para pedidos seleccionados" hidden>
+            <div class="batch-selection">
+              <span id="seleccion-lote" role="status"><strong id="cantidad-seleccionada"></strong> <span id="texto-seleccion"></span></span>
+              <button id="limpiar-lote" class="button ghost" type="button"><i class="icon close-icon" aria-hidden="true"></i>Deseleccionar</button>
+            </div>
+            <div class="batch-controls">
+              <button id="preparar-lote" class="button batch-prepare" type="button"><i class="icon box-icon" aria-hidden="true"></i><span>Preparar lote</span></button>
+              <button id="exportar" class="button primary" type="button" aria-haspopup="dialog" aria-controls="revision-excel" hidden><i class="icon download-icon" aria-hidden="true"></i><span>Exportar Excel</span></button>
+              <button id="enviar-lote" class="button batch-send" type="button"><i class="icon check-icon" aria-hidden="true"></i><span>Marcar enviados</span></button>
+            </div>
+            <p id="error-seleccion" class="notice error" role="status" hidden></p>
+          </div>
+        </div>
+      </section>
+      <footer class="site-credit">Desarrollado por <a href="https://sivansolutions.com/" target="_blank" rel="noopener noreferrer">Sivan Solutions</a></footer>
+    </section>
+
+    <dialog id="preparacion" aria-labelledby="titulo-preparacion">
+      <form id="datos-envio" class="editor">
+        <header class="editor-header">
+          <div><p id="pedido-codigo" class="order-reference"></p><h2 id="titulo-preparacion">Preparar bulto</h2></div>
+          <div id="pedido-estado" class="editor-stage"></div>
+          <button id="cerrar-preparacion" type="button" class="icon-button close-button" aria-label="Cerrar preparación"><i class="icon close-icon" aria-hidden="true"></i></button>
+        </header>
+        <div class="editor-body">
+          <dl class="order-details" aria-label="Datos del cliente">
+            <div>
+              <dt><span class="order-detail-icon" aria-hidden="true"><i class="icon person-icon"></i></span>Destinatario</dt>
+              <dd id="pedido-destinatario"></dd>
+              <dd id="pedido-documento" class="detail-secondary"></dd>
+            </div>
+            <div>
+              <dt><span class="order-detail-icon" aria-hidden="true"><i class="icon pin-icon"></i></span>Agencia elegida por el cliente</dt>
+              <dd id="pedido-agencia"></dd>
+              <dd id="pedido-direccion" class="detail-secondary"></dd>
+            </div>
+          </dl>
+          <p id="destino-no-exportable" class="notice warning" role="status" hidden>La agencia registrada no figura en la plantilla activa. Confirma el destino en Shalom Pro antes de exportar este pedido.</p>
+
+          <div class="package-grid">
+            <section class="package-fields" aria-labelledby="titulo-medidas">
+              <h3 id="titulo-medidas">Mercadería</h3>
+              <fieldset id="modo-medidas" class="measure-mode">
+                <legend class="sr-only">Modo de medidas</legend>
+                <label><input type="radio" name="modo" value="estandar" checked><span>Estándar</span></label>
+                <label><input type="radio" name="modo" value="personalizado"><span>Personalizadas</span></label>
+              </fieldset>
+              <label id="etiqueta-mercaderia" class="field" for="mercaderia">Tamaño de Shalom</label>
+              <select name="mercaderia" id="mercaderia" required autofocus><option value="">Selecciona un tamaño</option></select>
+              <div id="medidas-personalizadas" class="custom-measures" hidden>
+                <label for="alto" class="field">Alto <span>cm</span><input id="alto" name="alto" type="number" min="0.1" step="0.1" inputmode="decimal" required disabled></label>
+                <label for="ancho" class="field">Ancho <span>cm</span><input id="ancho" name="ancho" type="number" min="0.1" step="0.1" inputmode="decimal" required disabled></label>
+                <label for="largo" class="field">Largo <span>cm</span><input id="largo" name="largo" type="number" min="0.1" step="0.1" inputmode="decimal" required disabled></label>
+                <label for="peso" class="field">Peso <span>kg</span><input id="peso" name="peso" type="number" min="0" step="0.01" inputmode="decimal" required disabled></label>
+              </div>
+              <div class="quantity-field"><label class="field" for="cantidad">Bultos de este tamaño</label><input id="cantidad" name="cantidad" type="number" min="1" max="2147483647" step="1" inputmode="numeric" required></div>
+            </section>
+
+            <figure class="package-view" aria-label="Medidas del bulto">
+              <canvas id="caja-3d" aria-hidden="true"></canvas>
+              <dl class="preview-measures" id="resumen-vista">
+                <div><dt>Alto</dt><dd id="vista-alto">—</dd></div><div><dt>Ancho</dt><dd id="vista-ancho">—</dd></div>
+                <div><dt>Largo</dt><dd id="vista-largo">—</dd></div><div><dt>Peso</dt><dd id="vista-peso">—</dd></div>
+              </dl>
+            </figure>
+          </div>
+          <div id="bultos-adicionales" class="package-groups"></div>
+          <button id="agregar-bulto" class="button ghost add-package" type="button"><i class="icon plus-icon" aria-hidden="true"></i>Añadir otro tamaño</button>
+          <p id="error-envio" class="notice error" role="alert" hidden></p>
+        </div>
+        <footer class="editor-footer">
+          <button id="cancelar" type="button" class="button secondary">Cancelar</button>
+          <button id="guardar" type="submit" class="button primary"><span>Guardar bulto</span></button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="confirmar-despacho" class="dispatch-dialog" aria-labelledby="titulo-despacho" aria-describedby="detalle-despacho">
+      <div class="editor-header"><div><p id="codigo-despacho" class="order-reference"></p><h2 id="titulo-despacho">Marcar como enviado</h2></div></div>
+      <div class="editor-body">
+        <p id="detalle-despacho">Confirma que entregaste este pedido a Shalom.</p>
+        <div id="bultos-despacho" class="package-groups"></div>
+        <p id="error-despacho" class="notice error" role="alert" hidden></p>
+      </div>
+      <footer class="editor-footer"><button id="cancelar-despacho" type="button" class="button secondary" autofocus>Volver</button><button id="guardar-despacho" type="button" class="button primary">Confirmar envío</button></footer>
+    </dialog>
+    <dialog id="lote-pedidos" class="batch-dialog" aria-labelledby="titulo-lote" aria-describedby="instruccion-lote">
+      <form id="form-lote" class="editor">
+        <header class="editor-header">
+          <div><p id="resumen-lote" class="order-reference"></p><h2 id="titulo-lote">Preparar lote</h2></div>
+          <button id="cerrar-lote" class="icon-button close-button" type="button" aria-label="Cerrar lote"><i class="icon close-icon" aria-hidden="true"></i></button>
+        </header>
+        <div class="editor-body">
+          <p id="instruccion-lote" class="batch-instruction"></p>
+          <div id="tipo-compartido" class="batch-shortcut">
+            <label class="field" for="tipo-lote">Tamaño para todo el lote</label>
+            <select id="tipo-lote"><option value="">Selecciona un tipo</option></select>
+            <button id="aplicar-tipo-lote" class="button secondary" type="button" title="Cambia el primer tamaño de cada pedido" disabled>Aplicar a todos</button>
+          </div>
+          <ul id="lista-lote" class="batch-list" role="list" aria-label="Pedidos del lote"></ul>
+        </div>
+        <footer class="editor-footer batch-footer">
+          <p id="error-lote" class="notice error" role="alert" hidden></p>
+          <button id="cancelar-lote" class="button secondary" type="button">Volver</button>
+          <button id="guardar-lote" class="button primary" type="submit"></button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="revision-excel" class="batch-dialog export-dialog" aria-labelledby="titulo-revision-excel" aria-describedby="instruccion-revision-excel">
+      <form id="form-revision-excel" class="editor">
+        <header class="editor-header">
+          <div class="export-heading">
+            <img class="export-brand" src="/panel/shalom-pro.svg" width="355" height="60" alt="Shalom Pro">
+            <h2 id="titulo-revision-excel" tabindex="-1">Envío para Shalom Pro</h2>
+            <p id="resumen-revision-excel" class="order-reference"></p>
+          </div>
+          <button id="cerrar-revision-excel" class="icon-button close-button" type="button" aria-label="Cerrar revisión"><i class="icon close-icon" aria-hidden="true"></i></button>
+        </header>
+        <div class="editor-body">
+          <p id="instruccion-revision-excel" class="batch-instruction">Completa los datos de la persona que realizará el envío. Se usarán en todo el Excel.</p>
+          <div class="export-fields">
+            <div class="export-origin">
+              <label class="field" for="origen">Agencia de origen</label>
+              <div class="origin-picker">
+                <div class="input-with-icon"><i class="icon pin-icon" aria-hidden="true"></i><input id="origen" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lista-origenes" placeholder="Busca la agencia de salida" autocomplete="off" required></div>
+                <div class="origin-menu" id="menu-origen" hidden>
+                  <ul id="lista-origenes" role="listbox" aria-label="Agencias de origen"></ul>
+                  <p id="sin-origenes" role="status" hidden>Sin agencias para esa búsqueda</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label for="telefono-contacto" class="field">Teléfono</label>
+              <input id="telefono-contacto" type="tel" value="" maxlength="24" autocomplete="off" inputmode="tel" required>
+            </div>
+            <div>
+              <label class="field" for="documento-lote">DNI de quien envía</label>
+              <input id="documento-lote" type="text" maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos" inputmode="numeric" autocomplete="off" required>
+            </div>
+            <div class="export-grr">
+              <label class="field" for="grr-lote">N.º de GRR <span>(opcional)</span></label>
+              <input id="grr-lote" type="text" maxlength="30" placeholder="T001-123" autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <footer class="editor-footer batch-footer">
+          <p id="error-revision-excel" class="notice error" role="alert" hidden></p>
+          <button id="cancelar-revision-excel" class="button secondary" type="button">Volver</button>
+          <button id="descargar-excel" class="button primary" type="submit"><i class="icon download-icon" aria-hidden="true"></i><span>Descargar Excel</span></button>
+        </footer>
+      </form>
+    </dialog>
+    <template id="fila-preparacion-lote">
+      <div class="package-line"><fieldset class="batch-fields">
+        <legend class="sr-only"></legend>
+        <div class="batch-main-fields">
+          <label class="field">Tamaño<select name="mercaderia" required><option value="">Selecciona un tamaño</option></select></label>
+          <label class="field">Bultos<input name="cantidad" type="number" min="1" max="2147483647" step="1" inputmode="numeric" value="1" required></label>
+          <button class="button ghost batch-measure-toggle" type="button" aria-expanded="false">Medidas</button>
+        </div>
+        <div class="custom-measures batch-custom" hidden>
+          <label class="field">Alto <span>cm</span><input name="alto" type="number" min="0.1" step="0.1" inputmode="decimal" disabled required></label>
+          <label class="field">Ancho <span>cm</span><input name="ancho" type="number" min="0.1" step="0.1" inputmode="decimal" disabled required></label>
+          <label class="field">Largo <span>cm</span><input name="largo" type="number" min="0.1" step="0.1" inputmode="decimal" disabled required></label>
+          <label class="field">Peso <span>kg</span><input name="peso" type="number" min="0" step="0.01" inputmode="decimal" disabled required></label>
+        </div>
+        <button class="button ghost remove-package" type="button" hidden>Quitar tamaño</button>
+      </fieldset></div>
+    </template>
+  </main>
+</body>
+</html>
