@@ -19,7 +19,9 @@ Portal para registrar solicitudes de envío y organizar el despacho de pedidos. 
 
 Ejecuta `setup/esquema-d1.sql` en la consola de la base D1 y conéctala al proyecto con el nombre `DB`.
 
-En **Variables and Secrets**, registra `YIWU_WHATSAPP_NUMBER` como texto en formato internacional. El mismo valor se usa para el enlace de ayuda y para abrir el chat al guardar el pedido. Ejecuta `setup/generar-acceso-panel.ps1` en PowerShell y registra el resultado `YIWU_OWNER_PASSWORD_HASH` como secreto de Cloudflare. Despliega de nuevo para aplicar la configuración.
+En **Variables and Secrets**, registra `YIWU_WHATSAPP_NUMBER` como texto en formato internacional. El mismo valor se usa para el enlace de ayuda y para abrir el chat al guardar el pedido. Registra `YIWU_OWNER_USERNAME` como texto con el nombre de usuario del panel. Si omites esta variable, el usuario es `yiwu`.
+
+Ejecuta `setup/generar-acceso-panel.ps1` en PowerShell y registra el resultado `YIWU_OWNER_PASSWORD_HASH` como secreto de Cloudflare. Usa el parámetro `-ClavePropia` si prefieres escribir una contraseña de tu elección. Despliega de nuevo para aplicar la configuración.
 
 ## Desarrollo
 

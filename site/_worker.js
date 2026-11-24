@@ -137,11 +137,12 @@ async function digest(text) {
   return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
 }
 
-async function sessionKey(verifier, token) {
-  return base64Url(await digest(`sesion:${verifier}:${token}`));
+async function sessionKey(verifier, token, ownerUsername) {
+  const account = ownerUsername === 'yiwu' ? verifier : `${ownerUsername}:${verifier}`;
+  return base64Url(await digest(`sesion:${account}:${token}`));
 }
 
-async function startOwnerSession(request, db, verifier) {
+async function startOwnerSession(request, db, verifier, ownerUsername) {
   const data = await readJson(request);
   const usuario = cleanText(data?.usuario ?? data?.email);
   const password = data?.password;
@@ -155,11 +156,10 @@ async function startOwnerSession(request, db, verifier) {
     .bind(origin, now).first('intentos');
   if (count >= maxLoginAttempts) return json({ error: 'Demasiados intentos. Vuelve a intentar en unos minutos.' }, 429);
 
-  // El verificador corresponde a la clave aleatoria de 192 bits generada para la cuenta única.
   const correct = crypto.subtle.timingSafeEqual(
     new TextEncoder().encode(verifier), new TextEncoder().encode(base64Url(await digest(password)))
   );
-  if (!correct || usuario.toLowerCase() !== 'yiwu') {
+  if (!correct || usuario.toLowerCase() !== ownerUsername) {
     await db.prepare(`
       INSERT INTO intentos_panel (origen, vence_en, intentos) VALUES (?, ?, 1)
       ON CONFLICT (origen) DO UPDATE SET
@@ -174,7 +174,7 @@ async function startOwnerSession(request, db, verifier) {
     db.prepare('DELETE FROM sesiones_panel WHERE vence_en <= ?').bind(now),
     db.prepare('DELETE FROM intentos_panel WHERE origen = ?').bind(origin),
     db.prepare('DELETE FROM intentos_panel WHERE vence_en <= ?').bind(now),
-    db.prepare('INSERT INTO sesiones_panel (clave, vence_en) VALUES (?, ?)').bind(await sessionKey(verifier, token), now + sessionSeconds),
+    db.prepare('INSERT INTO sesiones_panel (clave, vence_en) VALUES (?, ?)').bind(await sessionKey(verifier, token, ownerUsername), now + sessionSeconds),
   ]);
   return json({ ok: true }, 200, { 'Set-Cookie': ownerSessionCookie(token, sessionSeconds) });
 }
@@ -446,15 +446,16 @@ async function ownerApi(request, env, url) {
   const isExport = url.pathname === '/api/panel/exportacion';
   if (!isSession && !isOrders && !isShipment && !isBatch && !isExport) return json({ error: 'Ruta no disponible.' }, 404);
   const verifier = env.YIWU_OWNER_PASSWORD_HASH?.trim();
-  if (!env.DB || !encodedDigest.test(verifier ?? '')) {
+  const ownerUsername = cleanText(env.YIWU_OWNER_USERNAME ?? 'yiwu').toLowerCase();
+  if (!env.DB || !encodedDigest.test(verifier ?? '') || !ownerUsername || ownerUsername.length > 254) {
     return json({ error: 'El acceso del dueño aún no está configurado.' }, 503);
   }
 
   try {
-    if (isSession && method === 'POST') return await startOwnerSession(request, env.DB, verifier);
+    if (isSession && method === 'POST') return await startOwnerSession(request, env.DB, verifier, ownerUsername);
     const token = ownerToken(request);
     if (!token) return json({ error: 'Inicia sesión para ver los pedidos.' }, 401);
-    const key = await sessionKey(verifier, token);
+    const key = await sessionKey(verifier, token, ownerUsername);
     if (isSession && method === 'DELETE') {
       await env.DB.prepare('DELETE FROM sesiones_panel WHERE clave = ?').bind(key).run();
       return json({ ok: true }, 200, { 'Set-Cookie': ownerSessionCookie('', 0) });
