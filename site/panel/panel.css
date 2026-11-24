@@ -444,8 +444,22 @@ dialog::backdrop { background: #0c2219ae; backdrop-filter: blur(4px); }
 .editor-footer { position: sticky; bottom: 0; justify-content: flex-end; border-top: 1px solid var(--line); background: var(--surface); }
 .dispatch-dialog { width: min(28rem, 100% - 2rem); }
 #detalle-despacho { color: var(--ink); font-weight: 620; }
-.deletion-summary { gap: 0.45rem; }
-.deletion-summary #destinatario-eliminacion { font-weight: 780; overflow-wrap: anywhere; }
+.deletion-summary { gap: 0.65rem; }
+.deletion-list {
+  max-height: min(15rem, 38dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.54rem;
+  background: #f7faf5;
+  list-style: none;
+}
+.deletion-list li { display: grid; gap: 0.1rem; padding-block: 0.5rem; overflow-wrap: anywhere; }
+.deletion-list li + li { border-top: 1px solid var(--line); }
+.deletion-list strong { font-size: 0.84rem; }
+.deletion-list span { color: var(--muted); font-size: 0.79rem; }
 
 .batch-dialog { width: min(61rem, 100% - 2rem); overflow: hidden; }
 .batch-dialog .editor { display: flex; flex-direction: column; max-height: calc(100dvh - 2rem - 2px); }

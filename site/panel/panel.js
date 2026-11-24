@@ -22,6 +22,7 @@ const selectedCount = byId('cantidad-seleccionada');
 const selectedLabel = byId('texto-seleccion');
 const prepareBatch = byId('preparar-lote');
 const sendBatch = byId('enviar-lote');
+const deleteBatch = byId('eliminar-lote');
 const clearBatch = byId('limpiar-lote');
 const maxBatchOrders = 100;
 const ordersPerLoad = 25;
@@ -62,7 +63,6 @@ const rangeDate = new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeZo
 const fileDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima' });
 const measureFormat = new Intl.NumberFormat('es-PE', { maximumFractionDigits: 2 });
 let catalog;
-let eligibleCount = 0;
 let activeFilters;
 let nextCursor = null;
 let listRequest;
@@ -74,13 +74,13 @@ let filterStage = '';
 let filterDate = { period: '' };
 let filterTimer;
 let shipment;
-let deletionCode;
+let deletionCodes = [];
 let extraPackages;
 let shipmentPackages;
 
 const hasPackage = order => Boolean(order.shalom_mercaderia && order.shalom_cantidad);
 const isReady = order => hasPackage(order) && Boolean(order.shalom_destino) && !order.despachado_en;
-const canSelect = order => !order.despachado_en && (!hasPackage(order) || isReady(order));
+const canPrepare = order => !order.despachado_en && !hasPackage(order);
 const orderStage = order => order.despachado_en ? 'enviado' : hasPackage(order) ? 'preparado' : 'recibido';
 const hasFilter = () => Boolean(search.value.trim() || regionFilter.value || filterStage || filterDate.period);
 
@@ -157,17 +157,20 @@ async function loadCatalog() {
 }
 
 function updateSelection() {
-  all.disabled = loading || !eligibleCount;
-  all.checked = eligibleCount > 0 && selected.size === eligibleCount;
+  all.disabled = loading || !orders.size;
+  all.checked = orders.size > 0 && selected.size === orders.size;
   all.indeterminate = selected.size > 0 && !all.checked;
-  const ready = [...selected.values()].filter(isReady).length;
-  const pending = selected.size - ready;
+  const selection = [...selected.values()];
+  const ready = selection.filter(isReady).length;
+  const pending = selection.filter(canPrepare).length;
   if (selectedCount.textContent !== String(selected.size)) {
     selectedCount.textContent = selected.size;
     selectedLabel.textContent = selected.size === 1 ? 'seleccionado' : 'seleccionados';
   }
   batchActions.hidden = !selected.size;
   clearBatch.disabled = loading;
+  deleteBatch.disabled = loading;
+  deleteBatch.textContent = `Eliminar seleccionados (${selected.size})`;
   prepareBatch.hidden = !pending;
   prepareBatch.disabled = loading;
   prepareBatch.querySelector('span').textContent = `Preparar (${pending})`;
@@ -271,7 +274,6 @@ function renderOrder(order) {
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.setAttribute('aria-label', `Seleccionar ${order.codigo}`);
-  checkbox.disabled = !canSelect(order);
   checkbox.checked = selected.has(order.codigo);
   checkbox.addEventListener('change', () => {
     if (loading) {
@@ -314,7 +316,7 @@ function renderOrder(order) {
   const label = order.despachado_en ? 'Ver pedido' : hasPackage(order) ? 'Editar' : 'Preparar';
   actions.append(orderButton(label, order, editOrder));
   if (isReady(order)) actions.append(orderButton('Marcar enviado', order, confirmShipment, 'dispatch-action'));
-  const deleteAction = orderButton('Eliminar', order, confirmDeletion, 'ghost delete-action');
+  const deleteAction = orderButton('Eliminar', order, target => confirmDeletion([target]), 'ghost delete-action');
   deleteAction.setAttribute('aria-haspopup', 'dialog');
   actions.append(deleteAction);
   action.append(actions);
@@ -323,7 +325,6 @@ function renderOrder(order) {
 
 function clearOrders() {
   orders.clear();
-  eligibleCount = 0;
   nextCursor = null;
   selected.clear();
   ordersTable.replaceChildren();
@@ -335,7 +336,6 @@ function appendOrders(batch) {
   for (const order of batch) {
     if (orders.has(order.codigo)) continue;
     orders.set(order.codigo, order);
-    if (canSelect(order)) eligibleCount++;
     rows.append(renderOrder(order));
   }
   ordersTable.append(rows);
@@ -502,18 +502,34 @@ function confirmShipment(order) {
   shipmentDialog.showModal();
 }
 
-function confirmDeletion(order) {
-  if (loading || filterTimer) return;
-  deletionCode = order.codigo;
-  byId('codigo-eliminacion').textContent = order.codigo;
-  byId('destinatario-eliminacion').textContent = order.nombre;
+function confirmDeletion(targets) {
+  if (loading || filterTimer || !targets.length) return;
+  if (targets.length > maxBatchOrders) {
+    status('error-seleccion', `Selecciona hasta ${maxBatchOrders} pedidos para eliminar por vez.`, true);
+    return;
+  }
+  deletionCodes = targets.map(order => order.codigo);
+  const single = targets.length === 1;
+  byId('resumen-eliminacion').textContent = single ? '1 pedido' : `${targets.length} pedidos seleccionados`;
+  byId('titulo-eliminacion').textContent = single ? 'Eliminar pedido' : 'Eliminar pedidos';
+  byId('detalle-eliminacion').textContent = single ? 'Este pedido se borrará del panel de forma permanente.' :
+    'Estos pedidos se borrarán del panel de forma permanente.';
+  byId('lista-eliminacion').replaceChildren(...targets.map(order => {
+    const item = document.createElement('li');
+    const code = document.createElement('strong');
+    const details = document.createElement('span');
+    const stage = stages.find(([key]) => key === orderStage(order))[1];
+    code.textContent = order.codigo;
+    details.textContent = `${order.nombre} · ${stage}`;
+    item.append(code, details);
+    return item;
+  }));
+  deletionSave.textContent = single ? 'Eliminar pedido' : `Eliminar ${targets.length} pedidos`;
   status('error-eliminacion');
   deletionDialog.showModal();
 }
 
 function removeListedOrder(codigo) {
-  const order = orders.get(codigo);
-  if (order && canSelect(order)) eligibleCount--;
   orders.delete(codigo);
   selected.delete(codigo);
   byId(codigo)?.remove();
@@ -528,14 +544,8 @@ function updateOrders(pedidos) {
       removeListedOrder(pedido.codigo);
       continue;
     }
-    if (canSelect(previous)) eligibleCount--;
     orders.set(pedido.codigo, pedido);
-    if (canSelect(pedido)) {
-      eligibleCount++;
-      if (selected.has(pedido.codigo)) selected.set(pedido.codigo, pedido);
-    } else {
-      selected.delete(pedido.codigo);
-    }
+    if (selected.has(pedido.codigo)) selected.set(pedido.codigo, pedido);
     row.replaceWith(renderOrder(pedido));
   }
   status('error-seleccion');
@@ -550,7 +560,7 @@ function updateOrder(pedido) {
 
 function openBatch(action) {
   if (loading) return;
-  const candidates = [...selected.values()].filter(action === 'preparar' ? order => !hasPackage(order) : isReady);
+  const candidates = [...selected.values()].filter(action === 'preparar' ? canPrepare : isReady);
   if (candidates.length > maxBatchOrders) {
     status('error-seleccion', `Selecciona hasta ${maxBatchOrders} pedidos por lote.`, true);
     return;
@@ -684,7 +694,6 @@ byId('limpiar-filtros').addEventListener('click', () => {
 });
 all.addEventListener('change', () => {
   for (const order of orders.values()) {
-    if (!canSelect(order)) continue;
     if (all.checked) selected.set(order.codigo, order);
     else selected.delete(order.codigo);
     byId(order.codigo).querySelector('.cell-select input').checked = all.checked;
@@ -694,6 +703,7 @@ all.addEventListener('change', () => {
 });
 prepareBatch.addEventListener('click', () => openBatch('preparar'));
 sendBatch.addEventListener('click', () => openBatch('enviar'));
+deleteBatch.addEventListener('click', () => confirmDeletion([...selected.values()]));
 clearBatch.addEventListener('click', () => {
   for (const code of selected.keys()) byId(code).querySelector('.cell-select input').checked = false;
   selected.clear();
@@ -741,32 +751,38 @@ shipmentSave.addEventListener('click', async () => {
 });
 deletionCancel.addEventListener('click', () => deletionDialog.close());
 deletionDialog.addEventListener('cancel', event => { if (deletionSave.disabled) event.preventDefault(); });
-deletionDialog.addEventListener('close', () => { if (!deletionDialog.open) deletionCode = undefined; });
+deletionDialog.addEventListener('close', () => {
+  if (deletionDialog.open) return;
+  deletionCodes = [];
+  byId('lista-eliminacion').replaceChildren();
+});
 deletionSave.addEventListener('click', async () => {
-  if (!deletionCode || deletionSave.disabled) return;
-  const codigo = deletionCode;
+  if (!deletionCodes.length || deletionSave.disabled) return;
+  const codes = deletionCodes;
+  const single = codes.length === 1;
+  const label = deletionSave.textContent;
   deletionSave.disabled = true;
   deletionCancel.disabled = true;
   deletionSave.textContent = 'Eliminando…';
   status('error-eliminacion');
   try {
-    await api('pedidos', { method: 'DELETE', body: JSON.stringify({ codigo }) });
-    const row = byId(codigo);
+    await api('pedidos', { method: 'DELETE', body: JSON.stringify({ pedidos: codes }) });
+    const row = single ? byId(codes[0]) : null;
     const neighbor = row?.nextElementSibling ?? row?.previousElementSibling;
     deletionDialog.close();
-    removeListedOrder(codigo);
+    for (const codigo of codes) removeListedOrder(codigo);
     status('error-seleccion');
     updateFeed();
     updateSelection();
-    status('estado-panel', `Pedido ${codigo} eliminado.`);
-    (neighbor?.querySelector('.row-actions button') ?? search).focus({ preventScroll: true });
+    status('estado-panel', single ? `Pedido ${codes[0]} eliminado.` : `${codes.length} pedidos eliminados.`);
+    (neighbor?.querySelector('.row-actions button') ?? (results.hidden ? search : results)).focus({ preventScroll: true });
   } catch (error) {
     if (error.status === 401) setLogin('La sesión venció. Vuelve a ingresar.');
-    else status('error-eliminacion', error.status ? error.message : 'No pudimos eliminar el pedido. Vuelve a intentarlo.', true);
+    else status('error-eliminacion', error.status ? error.message : 'No se pudo completar la eliminación. Vuelve a intentarlo.', true);
   } finally {
     deletionSave.disabled = false;
     deletionCancel.disabled = false;
-    deletionSave.textContent = 'Eliminar pedido';
+    deletionSave.textContent = label;
   }
 });
 dialog.addEventListener('cancel', event => {

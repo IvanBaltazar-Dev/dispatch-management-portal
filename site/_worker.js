@@ -15,7 +15,7 @@ const limaDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima', da
 const orderColumns = 'id,codigo,creado_en,agencia,departamento,direccion,nombre,dni,celular,shalom_mercaderia,shalom_cantidad,shalom_contacto_doc,shalom_contacto_telefono,shalom_grr,shalom_medidas,shalom_bultos,despachado_en';
 const orderPageSizes = ['25', '50', '100'];
 const orderStages = ['recibido', 'preparado', 'enviado'];
-const orderPeriods = ['hoy', 'ayer', 'semana', 'rango'];
+const orderPeriods = ['hoy', 'ayer', 'rango'];
 const normalizeAgency = name => name.toUpperCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/[^A-Z0-9]+/g, ' ').trim();
 
 function json(body, status = 200, headers = {}) {
@@ -196,10 +196,7 @@ function dateBounds(period, from, until) {
   if (period === 'rango') return [from, until === '9999-12-31' ? null : shiftDate(until, 1)];
   const today = limaDate.format(new Date());
   if (period === 'ayer') return [shiftDate(today, -1), today];
-  if (period === 'hoy') return [today, shiftDate(today, 1)];
-  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
-  const start = shiftDate(today, -((weekday + 6) % 7));
-  return [start, shiftDate(start, 7)];
+  return [today, shiftDate(today, 1)];
 }
 
 async function readOwnerOrders(env, url) {
@@ -248,12 +245,20 @@ function readOrder(db, codigo) {
   return db.prepare(`SELECT ${orderColumns} FROM pedidos_despacho WHERE codigo = ?`).bind(codigo).first();
 }
 
-async function deleteOwnerOrder(request, db) {
-  const codigo = (await readJson(request))?.codigo;
-  if (typeof codigo !== 'string' || codigo.length > 24 || !orderCode.test(codigo)) {
-    return json({ error: 'Pedido inválido.' }, 422);
+function validOrderCodes(codes) {
+  return codes.every(code => typeof code === 'string' && code.length <= 24 && orderCode.test(code)) &&
+    new Set(codes).size === codes.length;
+}
+
+async function deleteOwnerOrders(request, db) {
+  const body = await readJson(request);
+  const codes = body?.pedidos === undefined ? [body?.codigo] : body.pedidos;
+  if (!Array.isArray(codes) || !codes.length || codes.length > maxBatchOrders ||
+      (body?.pedidos !== undefined && body.codigo !== undefined) || !validOrderCodes(codes)) {
+    return json({ error: `Envía entre 1 y ${maxBatchOrders} códigos de pedido válidos y distintos.` }, 422);
   }
-  await db.prepare('DELETE FROM pedidos_despacho WHERE codigo = ?').bind(codigo).run();
+  await db.prepare('DELETE FROM pedidos_despacho WHERE codigo IN (SELECT value FROM json_each(?))')
+    .bind(JSON.stringify(codes)).run();
   return json({ ok: true });
 }
 
@@ -381,8 +386,7 @@ async function updateOwnerBatch(request, env, url) {
     return json({ error: `Selecciona entre 1 y ${maxBatchOrders} pedidos para el lote.` }, 422);
   }
   const codes = body.pedidos.map(order => order?.codigo);
-  if (codes.some(code => typeof code !== 'string' || code.length > 24 || !orderCode.test(code)) ||
-      new Set(codes).size !== codes.length) {
+  if (!validOrderCodes(codes)) {
     return json({ error: 'La lista contiene códigos inválidos o repetidos.' }, 422);
   }
   const catalog = await panelCatalog(env, url);
@@ -424,8 +428,7 @@ async function saveOwnerExport(request, env, url) {
   if (body.pedidos.length > catalog.maximo) return json({ error: `Selecciona hasta ${catalog.maximo} pedidos por archivo.` }, 422);
 
   const codes = body.pedidos;
-  if (codes.some(code => typeof code !== 'string' || code.length > 24 || !orderCode.test(code)) ||
-      new Set(codes).size !== codes.length) {
+  if (!validOrderCodes(codes)) {
     return json({ error: 'La selección contiene pedidos inválidos o repetidos.' }, 422);
   }
   // Si falta un pedido preparado, la consulta no modifica ninguno de los contactos.
@@ -476,7 +479,7 @@ async function ownerApi(request, env, url) {
     }
     if (isOrders && method === 'GET') return await readOwnerOrders(env, url);
     if (isOrders && method === 'PATCH') return await prepareOwnerOrder(request, env, url);
-    if (isOrders && method === 'DELETE') return await deleteOwnerOrder(request, env.DB);
+    if (isOrders && method === 'DELETE') return await deleteOwnerOrders(request, env.DB);
     if (isShipment && method === 'PATCH') return await confirmOwnerShipment(request, env, url);
     if (isBatch && method === 'PATCH') return await updateOwnerBatch(request, env, url);
     if (isExport && method === 'PATCH') return await saveOwnerExport(request, env, url);

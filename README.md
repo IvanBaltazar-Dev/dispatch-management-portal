@@ -7,6 +7,7 @@ Portal para registrar solicitudes de envío y organizar el despacho de pedidos. 
 - Registro de pedidos con búsqueda de agencias y enlace de confirmación por WhatsApp.
 - Panel privado con filtros por destino, fecha y estado y carga progresiva de pedidos.
 - Preparación por lotes, medidas de bultos y exportación Excel compatible con Shalom Pro.
+- Eliminación de pedidos individuales o seleccionados, con confirmación previa.
 
 ## Publicación en Cloudflare Pages
 

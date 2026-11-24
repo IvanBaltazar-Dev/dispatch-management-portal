@@ -128,6 +128,7 @@
               <button id="preparar-lote" class="button batch-prepare" type="button"><i class="icon box-icon" aria-hidden="true"></i><span>Preparar lote</span></button>
               <button id="exportar" class="button primary" type="button" aria-haspopup="dialog" aria-controls="revision-excel" hidden><i class="icon download-icon" aria-hidden="true"></i><span>Exportar Excel</span></button>
               <button id="enviar-lote" class="button batch-send" type="button"><i class="icon check-icon" aria-hidden="true"></i><span>Marcar enviados</span></button>
+              <button id="eliminar-lote" class="button ghost delete-action" type="button" aria-haspopup="dialog" aria-controls="confirmar-eliminacion">Eliminar seleccionados</button>
             </div>
             <p id="error-seleccion" class="notice error" role="status" hidden></p>
           </div>
@@ -204,13 +205,13 @@
       </div>
       <footer class="editor-footer"><button id="cancelar-despacho" type="button" class="button secondary" autofocus>Volver</button><button id="guardar-despacho" type="button" class="button primary">Confirmar envío</button></footer>
     </dialog>
-    <dialog id="confirmar-eliminacion" class="dispatch-dialog" aria-labelledby="titulo-eliminacion" aria-describedby="destinatario-eliminacion detalle-eliminacion">
+    <dialog id="confirmar-eliminacion" class="dispatch-dialog" aria-labelledby="titulo-eliminacion" aria-describedby="detalle-eliminacion">
       <header class="editor-header">
-        <div><p id="codigo-eliminacion" class="order-reference"></p><h2 id="titulo-eliminacion">Eliminar pedido</h2></div>
+        <div><p id="resumen-eliminacion" class="order-reference"></p><h2 id="titulo-eliminacion">Eliminar pedido</h2></div>
       </header>
       <div class="editor-body deletion-summary">
-        <p id="destinatario-eliminacion"></p>
-        <p id="detalle-eliminacion">El pedido se borrará del panel de forma permanente.</p>
+        <p id="detalle-eliminacion"></p>
+        <ul id="lista-eliminacion" class="deletion-list" role="list" aria-label="Pedidos que se eliminarán" tabindex="0"></ul>
         <p id="error-eliminacion" class="notice error" role="alert" hidden></p>
       </div>
       <footer class="editor-footer">
