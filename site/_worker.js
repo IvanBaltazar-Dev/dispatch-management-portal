@@ -248,6 +248,15 @@ function readOrder(db, codigo) {
   return db.prepare(`SELECT ${orderColumns} FROM pedidos_despacho WHERE codigo = ?`).bind(codigo).first();
 }
 
+async function deleteOwnerOrder(request, db) {
+  const codigo = (await readJson(request))?.codigo;
+  if (typeof codigo !== 'string' || codigo.length > 24 || !orderCode.test(codigo)) {
+    return json({ error: 'Pedido inválido.' }, 422);
+  }
+  await db.prepare('DELETE FROM pedidos_despacho WHERE codigo = ?').bind(codigo).run();
+  return json({ ok: true });
+}
+
 function storedPackages(fields) {
   return {
     shalom_mercaderia: fields.shalom_mercaderia,
@@ -467,6 +476,7 @@ async function ownerApi(request, env, url) {
     }
     if (isOrders && method === 'GET') return await readOwnerOrders(env, url);
     if (isOrders && method === 'PATCH') return await prepareOwnerOrder(request, env, url);
+    if (isOrders && method === 'DELETE') return await deleteOwnerOrder(request, env.DB);
     if (isShipment && method === 'PATCH') return await confirmOwnerShipment(request, env, url);
     if (isBatch && method === 'PATCH') return await updateOwnerBatch(request, env, url);
     if (isExport && method === 'PATCH') return await saveOwnerExport(request, env, url);

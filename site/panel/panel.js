@@ -46,6 +46,9 @@ const retryOrders = byId('reintentar-pedidos');
 const shipmentDialog = byId('confirmar-despacho');
 const shipmentSave = byId('guardar-despacho');
 const shipmentCancel = byId('cancelar-despacho');
+const deletionDialog = byId('confirmar-eliminacion');
+const deletionSave = byId('guardar-eliminacion');
+const deletionCancel = byId('cancelar-eliminacion');
 const stages = [['recibido', 'Recibido'], ['preparado', 'Preparado'], ['enviado', 'Enviado']];
 const measureKeys = ['alto', 'ancho', 'largo', 'peso'];
 const customMeasures = measureKeys.map(byId);
@@ -71,6 +74,7 @@ let filterStage = '';
 let filterDate = { period: '' };
 let filterTimer;
 let shipment;
+let deletionCode;
 let extraPackages;
 let shipmentPackages;
 
@@ -119,6 +123,7 @@ function setLogin(message = '') {
   form.reset();
   if (dialog.open) dialog.close();
   if (shipmentDialog.open) shipmentDialog.close();
+  if (deletionDialog.open) deletionDialog.close();
   batchEditor.close();
   exportReview.close();
   clearOrders();
@@ -309,6 +314,9 @@ function renderOrder(order) {
   const label = order.despachado_en ? 'Ver pedido' : hasPackage(order) ? 'Editar' : 'Preparar';
   actions.append(orderButton(label, order, editOrder));
   if (isReady(order)) actions.append(orderButton('Marcar enviado', order, confirmShipment, 'dispatch-action'));
+  const deleteAction = orderButton('Eliminar', order, confirmDeletion, 'ghost delete-action');
+  deleteAction.setAttribute('aria-haspopup', 'dialog');
+  actions.append(deleteAction);
   action.append(actions);
   return row;
 }
@@ -494,18 +502,33 @@ function confirmShipment(order) {
   shipmentDialog.showModal();
 }
 
+function confirmDeletion(order) {
+  if (loading || filterTimer) return;
+  deletionCode = order.codigo;
+  byId('codigo-eliminacion').textContent = order.codigo;
+  byId('destinatario-eliminacion').textContent = order.nombre;
+  status('error-eliminacion');
+  deletionDialog.showModal();
+}
+
+function removeListedOrder(codigo) {
+  const order = orders.get(codigo);
+  if (order && canSelect(order)) eligibleCount--;
+  orders.delete(codigo);
+  selected.delete(codigo);
+  byId(codigo)?.remove();
+}
+
 function updateOrders(pedidos) {
   for (const pedido of pedidos) {
     const previous = orders.get(pedido.codigo);
     if (!previous) continue;
     const row = byId(pedido.codigo);
-    if (canSelect(previous)) eligibleCount--;
     if (filterStage && orderStage(pedido) !== filterStage) {
-      orders.delete(pedido.codigo);
-      selected.delete(pedido.codigo);
-      row.remove();
+      removeListedOrder(pedido.codigo);
       continue;
     }
+    if (canSelect(previous)) eligibleCount--;
     orders.set(pedido.codigo, pedido);
     if (canSelect(pedido)) {
       eligibleCount++;
@@ -714,6 +737,36 @@ shipmentSave.addEventListener('click', async () => {
     shipmentSave.disabled = false;
     shipmentCancel.disabled = false;
     shipmentSave.textContent = 'Confirmar envío';
+  }
+});
+deletionCancel.addEventListener('click', () => deletionDialog.close());
+deletionDialog.addEventListener('cancel', event => { if (deletionSave.disabled) event.preventDefault(); });
+deletionDialog.addEventListener('close', () => { if (!deletionDialog.open) deletionCode = undefined; });
+deletionSave.addEventListener('click', async () => {
+  if (!deletionCode || deletionSave.disabled) return;
+  const codigo = deletionCode;
+  deletionSave.disabled = true;
+  deletionCancel.disabled = true;
+  deletionSave.textContent = 'Eliminando…';
+  status('error-eliminacion');
+  try {
+    await api('pedidos', { method: 'DELETE', body: JSON.stringify({ codigo }) });
+    const row = byId(codigo);
+    const neighbor = row?.nextElementSibling ?? row?.previousElementSibling;
+    deletionDialog.close();
+    removeListedOrder(codigo);
+    status('error-seleccion');
+    updateFeed();
+    updateSelection();
+    status('estado-panel', `Pedido ${codigo} eliminado.`);
+    (neighbor?.querySelector('.row-actions button') ?? search).focus({ preventScroll: true });
+  } catch (error) {
+    if (error.status === 401) setLogin('La sesión venció. Vuelve a ingresar.');
+    else status('error-eliminacion', error.status ? error.message : 'No pudimos eliminar el pedido. Vuelve a intentarlo.', true);
+  } finally {
+    deletionSave.disabled = false;
+    deletionCancel.disabled = false;
+    deletionSave.textContent = 'Eliminar pedido';
   }
 });
 dialog.addEventListener('cancel', event => {

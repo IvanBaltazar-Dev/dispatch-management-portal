@@ -204,6 +204,20 @@
       </div>
       <footer class="editor-footer"><button id="cancelar-despacho" type="button" class="button secondary" autofocus>Volver</button><button id="guardar-despacho" type="button" class="button primary">Confirmar envío</button></footer>
     </dialog>
+    <dialog id="confirmar-eliminacion" class="dispatch-dialog" aria-labelledby="titulo-eliminacion" aria-describedby="destinatario-eliminacion detalle-eliminacion">
+      <header class="editor-header">
+        <div><p id="codigo-eliminacion" class="order-reference"></p><h2 id="titulo-eliminacion">Eliminar pedido</h2></div>
+      </header>
+      <div class="editor-body deletion-summary">
+        <p id="destinatario-eliminacion"></p>
+        <p id="detalle-eliminacion">El pedido se borrará del panel de forma permanente.</p>
+        <p id="error-eliminacion" class="notice error" role="alert" hidden></p>
+      </div>
+      <footer class="editor-footer">
+        <button id="cancelar-eliminacion" type="button" class="button secondary" autofocus>Cancelar</button>
+        <button id="guardar-eliminacion" type="button" class="button danger">Eliminar pedido</button>
+      </footer>
+    </dialog>
     <dialog id="lote-pedidos" class="batch-dialog" aria-labelledby="titulo-lote" aria-describedby="instruccion-lote">
       <form id="form-lote" class="editor">
         <header class="editor-header">
