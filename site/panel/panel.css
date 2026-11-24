@@ -335,7 +335,8 @@ td small { display: block; margin-top: 0.11rem; color: var(--muted); font-size: 
 .delete-action { color: var(--error); }
 .delete-action:hover:enabled { background: #fbecee; }
 .order-code { white-space: nowrap; color: #204a34; font-variant-numeric: tabular-nums; }
-.recipient small { font-variant-numeric: tabular-nums; }
+.recipient small { display: flex; flex-wrap: wrap; gap: 0 0.65rem; font-variant-numeric: tabular-nums; }
+.recipient small span { white-space: nowrap; }
 .mobile-card-label { display: none; }
 .mobile-select-label { display: none; }
 .preparation { min-width: 10.85rem; }

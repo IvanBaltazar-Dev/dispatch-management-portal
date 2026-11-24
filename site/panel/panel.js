@@ -224,6 +224,10 @@ function textCell(row, text, detail) {
   return cell;
 }
 
+function phoneLabel(phone) {
+  return `Cel. ${phone?.replace(/^(\d{3})(\d{3})(\d{3})$/, '$1 $2 $3') || '—'}`;
+}
+
 function timeline(order) {
   const current = stages.findIndex(([stage]) => stage === orderStage(order));
   const list = document.createElement('ol');
@@ -289,7 +293,15 @@ function renderOrder(order) {
   selectionCell.className = 'cell-select';
   selectionCell.append(checkbox);
   textCell(row, order.codigo, localDate.format(new Date(order.creado_en))).className = 'order-code';
-  cardField(textCell(row, order.nombre, `DNI ${order.dni}`), 'recipient', 'person', 'Destinatario');
+  const recipient = textCell(row, order.nombre);
+  const recipientDetails = document.createElement('small');
+  for (const value of [`DNI ${order.dni}`, phoneLabel(order.celular)]) {
+    const detail = document.createElement('span');
+    detail.textContent = value;
+    recipientDetails.append(detail);
+  }
+  recipient.append(recipientDetails);
+  cardField(recipient, 'recipient', 'person', 'Destinatario');
   cardField(textCell(row, order.agencia, order.shalom_ubicacion || order.departamento), 'destination', 'pin', 'Agencia de destino');
   const bundles = packagesOf(order);
   const units = bundles.reduce((total, bundle) => total + bundle.cantidad, 0);
@@ -468,7 +480,7 @@ function editOrder(order) {
   byId('pedido-agencia').textContent = `${order.agencia} · ${order.shalom_ubicacion || order.departamento}`;
   byId('pedido-direccion').textContent = order.direccion;
   byId('pedido-destinatario').textContent = order.nombre;
-  byId('pedido-documento').textContent = `DNI ${order.dni} · ${order.celular}`;
+  byId('pedido-documento').textContent = `DNI ${order.dni} · ${phoneLabel(order.celular)}`;
   byId('destino-no-exportable').hidden = Boolean(order.shalom_destino);
   const [first, ...others] = packagesOf(order);
   form.elements.mercaderia.value = first?.mercaderia || '';
