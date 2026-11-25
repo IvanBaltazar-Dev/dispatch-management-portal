@@ -12,7 +12,10 @@ const attemptSeconds = 900;
 const maxLoginAttempts = 8;
 const encodedDigest = /^[A-Za-z0-9_-]{43}$/;
 const limaDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima', dateStyle: 'short' });
-const orderColumns = 'id,codigo,creado_en,agencia,departamento,direccion,nombre,dni,celular,shalom_mercaderia,shalom_cantidad,shalom_contacto_doc,shalom_contacto_telefono,shalom_grr,shalom_medidas,shalom_bultos,despachado_en';
+const orderColumns = `id,codigo,creado_en,agencia,departamento,direccion,nombre,dni,celular,shalom_mercaderia,shalom_cantidad,
+  shalom_contacto_doc,shalom_contacto_telefono,shalom_grr,shalom_medidas,shalom_bultos,despachado_en,notificar_whatsapp,
+  whatsapp_preparado_en, (SELECT estado FROM avisos_whatsapp WHERE pedido_id = pedidos_despacho.id) AS aviso_whatsapp`;
+const shipmentMessage = '🎉 ¡Buenas noticias!\n\n📦 Tu pedido ya está en SHALOM, listo para ser enviado. 🚚\n\n💚 ¡Gracias por comprar en YIWU CENTER!';
 const orderPageSizes = ['25', '50', '100'];
 const orderStages = ['recibido', 'preparado', 'enviado'];
 const orderPeriods = ['hoy', 'ayer', 'rango'];
@@ -93,10 +96,13 @@ async function panelCatalog(env, pageUrl) {
     withDestination(order) {
       const key = normalizeAgency(order.agencia);
       const branch = branches.get(order.departamento)?.get(key);
+      const scheduledNotice = order.notificar_whatsapp && order.despachado_en && !order.whatsapp_preparado_en;
       return {
         ...order,
         shalom_destino: branch?.proName ?? null,
         shalom_ubicacion: branch?.place ?? order.departamento,
+        // RETURNING puede leer la fila antes de que el trigger cree el aviso.
+        aviso_whatsapp: order.aviso_whatsapp ?? (scheduledNotice ? 'pendiente' : null),
         shalom_medidas: JSON.parse(order.shalom_medidas),
         shalom_bultos: JSON.parse(order.shalom_bultos),
       };
@@ -105,12 +111,12 @@ async function panelCatalog(env, pageUrl) {
 }
 
 async function saveOrder(db, order) {
-  const { solicitud, agencia, departamento, direccion, nombre, dni, celular } = order;
+  const { solicitud, agencia, departamento, direccion, nombre, dni, celular, notificar_whatsapp } = order;
   const values = [solicitud, agencia, departamento, direccion, nombre, dni, celular];
   const written = await db.prepare(`
-    INSERT INTO pedidos_despacho (solicitud, agencia, departamento, direccion, nombre, dni, celular, busqueda)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (solicitud) DO NOTHING RETURNING codigo
-  `).bind(...values, normalizeAgency([nombre, agencia, departamento, direccion].join(' '))).first('codigo');
+    INSERT INTO pedidos_despacho (solicitud, agencia, departamento, direccion, nombre, dni, celular, busqueda, notificar_whatsapp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (solicitud) DO NOTHING RETURNING codigo
+  `).bind(...values, normalizeAgency([nombre, agencia, departamento, direccion].join(' ')), Number(notificar_whatsapp)).first('codigo');
   if (written) return written;
   return db.prepare(`
     SELECT codigo FROM pedidos_despacho WHERE solicitud = ? AND agencia = ? AND departamento = ?
@@ -245,6 +251,19 @@ function readOrder(db, codigo) {
   return db.prepare(`SELECT ${orderColumns} FROM pedidos_despacho WHERE codigo = ?`).bind(codigo).first();
 }
 
+async function retryOwnerNotice(request, env, url) {
+  const body = await readJson(request);
+  if (typeof body?.codigo !== 'string' || !orderCode.test(body.codigo)) return json({ error: 'Pedido inválido.' }, 422);
+  const catalog = await panelCatalog(env, url);
+  const updated = await env.DB.prepare(`
+    UPDATE avisos_whatsapp SET estado = 'pendiente', intentos = 0, proximo_intento = 0, error_codigo = NULL
+    WHERE pedido_id = (SELECT id FROM pedidos_despacho WHERE codigo = ?) AND estado = 'error'
+  `).bind(body.codigo).run();
+  if (!updated.meta.changes) return json({ error: 'El aviso ya cambió de estado. Actualiza el listado.' }, 409);
+  const pedido = await readOrder(env.DB, body.codigo);
+  return pedido ? json({ pedido: catalog.withDestination(pedido) }) : json({ error: 'El pedido ya no está disponible.' }, 404);
+}
+
 function validOrderCodes(codes) {
   return codes.every(code => typeof code === 'string' && code.length <= 24 && orderCode.test(code)) &&
     new Set(codes).size === codes.length;
@@ -326,12 +345,13 @@ async function confirmOwnerShipment(request, env, url) {
   const [row, catalog] = await Promise.all([readOrder(env.DB, body.codigo), panelCatalog(env, url)]);
   if (!row) return json({ error: 'El pedido ya no está disponible.' }, 404);
   const order = catalog.withDestination(row);
-  if (order.despachado_en) return json({ pedido: order });
-  if (!order.shalom_destino || !catalog.mercaderias.includes(order.shalom_mercaderia) || !order.shalom_cantidad) {
+  if (!order.despachado_en && (!order.shalom_destino || !catalog.mercaderias.includes(order.shalom_mercaderia) || !order.shalom_cantidad)) {
     return json({ error: 'Guarda la preparación y verifica el destino antes de marcar el envío.' }, 409);
   }
-  const [saved] = await shipOrders(env.DB, [row]);
-  return saved?.despachado_en ? json({ pedido: catalog.withDestination(saved) }) : json({ error: 'El pedido ya no está disponible.' }, 409);
+  const [saved] = await shipOrders(env.DB, [row], true);
+  if (!saved?.despachado_en) return json({ error: 'El pedido cambió. Actualiza el listado y vuelve a intentarlo.' }, 409);
+  const enlace_whatsapp = `https://api.whatsapp.com/send?phone=51${saved.celular}&text=${encodeURIComponent(shipmentMessage)}`;
+  return json({ pedido: catalog.withDestination(saved), enlace_whatsapp });
 }
 
 async function shipmentCandidates(db, codes, catalog) {
@@ -342,21 +362,23 @@ async function shipmentCandidates(db, codes, catalog) {
     catalog.withDestination(row).shalom_destino);
 }
 
-async function shipOrders(db, orders) {
+async function shipOrders(db, orders, prepareWhatsApp = false) {
   if (!orders.length) return [];
   const snapshot = orders.map(({ codigo, agencia, departamento, shalom_mercaderia, shalom_cantidad, shalom_medidas, shalom_bultos }) =>
     [codigo, agencia, departamento, shalom_mercaderia, shalom_cantidad, shalom_medidas, shalom_bultos]);
-  // Una sola escritura de lote mantiene la comprobación contra el pedido leído en la misma operación.
+  const shippedAt = new Date().toISOString();
+  // Una sola escritura conserva la fecha original y comprueba que la preparación siga vigente.
   const { results } = await db.prepare(`
     WITH datos(codigo_lote, agencia_lote, departamento_lote, tipo, cantidad, medidas, bultos) AS (
       SELECT value ->> 0, value ->> 1, value ->> 2, value ->> 3, value ->> 4, value ->> 5, value ->> 6 FROM json_each(?)
     )
-    UPDATE pedidos_despacho SET despachado_en = coalesce(despachado_en, ?)
+    UPDATE pedidos_despacho SET despachado_en = coalesce(despachado_en, ?),
+      whatsapp_preparado_en = coalesce(?, whatsapp_preparado_en)
     FROM datos WHERE codigo = datos.codigo_lote AND agencia = datos.agencia_lote AND departamento = datos.departamento_lote
       AND shalom_mercaderia = datos.tipo AND shalom_cantidad = datos.cantidad
       AND shalom_medidas IS datos.medidas AND shalom_bultos IS datos.bultos
     RETURNING ${orderColumns}
-  `).bind(JSON.stringify(snapshot), new Date().toISOString()).all();
+  `).bind(JSON.stringify(snapshot), shippedAt, prepareWhatsApp ? shippedAt : null).all();
   return results;
 }
 
@@ -454,9 +476,10 @@ async function ownerApi(request, env, url) {
   const isSession = url.pathname === '/api/panel/sesion';
   const isOrders = url.pathname === '/api/panel/pedidos';
   const isShipment = url.pathname === '/api/panel/despacho';
+  const isNotice = url.pathname === '/api/panel/aviso-whatsapp';
   const isBatch = url.pathname === '/api/panel/lote';
   const isExport = url.pathname === '/api/panel/exportacion';
-  if (!isSession && !isOrders && !isShipment && !isBatch && !isExport) return json({ error: 'Ruta no disponible.' }, 404);
+  if (!isSession && !isOrders && !isShipment && !isNotice && !isBatch && !isExport) return json({ error: 'Ruta no disponible.' }, 404);
   const verifier = env.YIWU_OWNER_PASSWORD_HASH?.trim();
   const ownerUsername = cleanText(env.YIWU_OWNER_USERNAME ?? 'yiwu').toLowerCase();
   if (!env.DB || !encodedDigest.test(verifier ?? '') || !ownerUsername || ownerUsername.length > 254) {
@@ -481,6 +504,7 @@ async function ownerApi(request, env, url) {
     if (isOrders && method === 'PATCH') return await prepareOwnerOrder(request, env, url);
     if (isOrders && method === 'DELETE') return await deleteOwnerOrders(request, env.DB);
     if (isShipment && method === 'PATCH') return await confirmOwnerShipment(request, env, url);
+    if (isNotice && method === 'PATCH') return await retryOwnerNotice(request, env, url);
     if (isBatch && method === 'PATCH') return await updateOwnerBatch(request, env, url);
     if (isExport && method === 'PATCH') return await saveOwnerExport(request, env, url);
     return json({ error: 'Operación no disponible.' }, 405);
@@ -514,12 +538,14 @@ export default {
       nombre: cleanText(body.nombre),
       dni: body.dni,
       celular: body.celular,
+      notificar_whatsapp: body.notificar_whatsapp === undefined ? false : body.notificar_whatsapp,
     };
     if (typeof order.solicitud !== 'string' || !requestId.test(order.solicitud) ||
         !order.agencia || !order.departamento || !order.direccion ||
         order.nombre.length > 120 || !fullName.test(order.nombre) ||
         typeof order.dni !== 'string' || !/^\d{8}$/.test(order.dni) ||
-        typeof order.celular !== 'string' || !/^9\d{8}$/.test(order.celular)) {
+        typeof order.celular !== 'string' || !/^9\d{8}$/.test(order.celular) ||
+        typeof order.notificar_whatsapp !== 'boolean') {
       return json({ error: 'Datos inválidos' }, 422);
     }
 

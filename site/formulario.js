@@ -10,6 +10,7 @@ const selection = document.getElementById('agencia-elegida');
 const nameInput = document.getElementById('nombre');
 const dniInput = document.getElementById('dni');
 const phoneInput = document.getElementById('celular');
+const advisorLink = document.querySelector('.header-channel');
 const review = document.getElementById('revision');
 const confirmButton = document.getElementById('confirmar-pedido');
 const confirmLabel = confirmButton.querySelector('span');
@@ -233,15 +234,17 @@ function shipmentDetails() {
 
 function buildMessage(shipment, code) {
   return [
-    'Datos de envío Shalom',
-    `Pedido: ${code}`,
+    '📦 *Datos de envío Shalom*',
+    `🧾 *Pedido:* ${code}`,
     '',
-    `Agencia: ${shipment.agencia}`,
-    `Departamento: ${shipment.departamento}`,
-    `Dirección: ${shipment.direccion}`,
+    '📍 *Agencia de destino*',
+    `*Agencia:* ${shipment.agencia}`,
+    `*Departamento:* ${shipment.departamento}`,
+    `*Dirección:* ${shipment.direccion}`,
     '',
-    `Recoge: ${shipment.nombre}`,
-    `Celular: ${shipment.celular}`,
+    '👤 *Datos de recojo*',
+    `*Recoge:* ${shipment.nombre}`,
+    `📱 *Celular:* ${shipment.celular}`,
   ].join('\n');
 }
 
@@ -305,7 +308,7 @@ function closeReview() {
   orderStatus.textContent = '';
   orderStatus.classList.remove('error');
   confirmButton.hidden = false;
-  confirmLabel.textContent = 'Guardar y abrir WhatsApp';
+  confirmLabel.textContent = 'Confirmar pedido';
   whatsappLink.hidden = true;
   whatsappLink.removeAttribute('href');
   editButton.textContent = 'Volver a editar';
@@ -361,14 +364,22 @@ confirmButton.addEventListener('click', async () => {
   }
 
   order.code = receipt.codigo;
-  const number = /^[1-9]\d{7,14}$/.test(receipt.numeroWhatsApp) ? receipt.numeroWhatsApp : '';
-  const destination = new URL(`https://wa.me/${number}`);
-  destination.search = `text=${encodeURIComponent(buildMessage(order.shipment, order.code))}`;
-  orderStatus.textContent = number
-    ? `Pedido ${order.code} guardado. Toca Enviar en WhatsApp.`
-    : `Pedido ${order.code} guardado. Elige el chat de tu asesor y toca Enviar.`;
   confirmButton.hidden = true;
   editButton.textContent = 'Cerrar';
+  const validNumber = /^[1-9]\d{7,14}$/;
+  const advisorNumber = validNumber.test(receipt.numeroWhatsApp)
+    ? receipt.numeroWhatsApp
+    : new URL(advisorLink.href).pathname.slice(1);
+  if (!validNumber.test(advisorNumber)) {
+    orderStatus.textContent = `Pedido ${order.code} guardado. El WhatsApp del asesor no está disponible en este momento.`;
+    orderStatus.classList.add('error');
+    editButton.focus();
+    return;
+  }
+
+  // El redireccionamiento de wa.me puede sustituir los emojis del mensaje.
+  const destination = new URL(`https://api.whatsapp.com/send?phone=${advisorNumber}&text=${encodeURIComponent(buildMessage(order.shipment, order.code))}`);
+  orderStatus.textContent = `Pedido ${order.code} guardado. Toca Enviar en WhatsApp.`;
   whatsappLink.href = destination.href;
   whatsappLink.hidden = false;
   whatsappLink.focus();

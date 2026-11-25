@@ -1,0 +1,16 @@
+{
+  "name": "yiwu-avisos-whatsapp",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-25",
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "yiwu-despachos", "database_id": "REEMPLAZAR_ID_D1" }],
+  "vars": {
+    "WA_SHIPMENT_API_VERSION": "v27.0",
+    "WA_SHIPMENT_TEMPLATE": "pedido_en_shalom",
+    "WA_SHIPMENT_LANGUAGE": "es",
+    "WA_SHIPMENT_PHONE_NUMBER_ID": "REEMPLAZAR_ID_DEL_NUMERO",
+    "WA_SHIPMENT_IMAGE_URL": "https://REEMPLAZAR_DOMINIO/aviso-despacho-shalom.jpg"
+  }
+}

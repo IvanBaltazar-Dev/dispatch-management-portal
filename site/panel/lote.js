@@ -3,7 +3,7 @@ import { createPackageList, packagesOf } from './bultos.js';
 const byId = id => document.getElementById(id);
 const actions = {
   preparar: ['Preparar lote', 'Indica cuántos bultos hay de cada tamaño. Si un pedido combina tamaños, añade otro.', 'Guardar preparación', 'Guardando…'],
-  enviar: ['Marcar lote como enviado', 'Confirma que estos pedidos ya fueron entregados a Shalom.', 'Confirmar envíos', 'Registrando…'],
+  enviar: ['Marcar lote como enviado', 'Confirma que estos pedidos ya fueron entregados a Shalom. Se programará el aviso de WhatsApp para quienes lo autorizaron.', 'Confirmar envíos', 'Registrando…'],
 };
 
 export function createBatchEditor(save) {

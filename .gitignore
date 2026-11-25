@@ -6,7 +6,13 @@
 !/scripts/build.mjs
 !/setup/
 !/setup/esquema-d1.sql
+!/setup/avisos-whatsapp-d1.sql
+!/setup/confirmacion-whatsapp-d1.sql
 !/setup/generar-acceso-panel.ps1
+!/avisos-whatsapp/
+!/avisos-whatsapp/worker.mjs
+!/avisos-whatsapp/wrangler.jsonc
+!/avisos-whatsapp/worker.test.mjs
 !/site/
 !/site/panel/
 !/site/_headers
@@ -16,6 +22,7 @@
 !/site/formulario.js
 !/site/hero-despacho-yiwu.jpg
 !/site/index.html
+!/site/aviso-despacho-shalom.jpg
 !/site/manrope-latin.woff2
 !/site/manrope-LICENSE.txt
 !/site/panel/bricolage-grotesque-LICENSE.txt

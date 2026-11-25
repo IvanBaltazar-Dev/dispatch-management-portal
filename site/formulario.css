@@ -326,6 +326,7 @@ dialog::backdrop { background: #10271dc9; backdrop-filter: blur(3px); }
 .review-contact dd { font-variant-numeric: tabular-nums; }
 .review-footer { margin-top: .78rem; }
 .review-note { color: var(--muted); font-size: .83rem; font-weight: 580; line-height: 1.45; }
+.review-warning { display: flex; align-items: flex-start; gap: .5rem; padding: .55rem .7rem; border: 1px solid #efc8cf; border-radius: .55rem; background: #fff2f3; color: var(--error); font-weight: 700; }
 #estado-pedido { margin-top: .45rem; }
 #estado-pedido.error { color: var(--error); }
 .review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .85rem; margin-top: .63rem; }

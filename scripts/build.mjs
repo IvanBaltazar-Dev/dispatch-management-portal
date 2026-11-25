@@ -48,7 +48,7 @@ for (const [page, paths] of [
     html = html.replace(`"${path}"`, `"${path}?v=${tag}"`);
   }
   if (phone) {
-    if (page === 'index.html') html = html.replace('https://wa.me/?text=', `https://wa.me/${phone}?text=`);
+    if (page === 'index.html') html = html.replace(/https:\/\/wa\.me\/[1-9]\d{7,14}\?text=/, `https://wa.me/${phone}?text=`);
     else html = html.replace('id="telefono-contacto" type="tel" value=""', `id="telefono-contacto" type="tel" value="+${phone}"`);
   }
   await writeFile(asset(page), html);

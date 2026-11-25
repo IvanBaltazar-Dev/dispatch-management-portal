@@ -51,6 +51,13 @@ const deletionDialog = byId('confirmar-eliminacion');
 const deletionSave = byId('guardar-eliminacion');
 const deletionCancel = byId('cancelar-eliminacion');
 const stages = [['recibido', 'Recibido'], ['preparado', 'Preparado'], ['enviado', 'Enviado']];
+const noticeLabels = new Map([
+  ['pendiente', 'Aviso pendiente'],
+  ['procesando', 'Enviando aviso'],
+  ['aceptado', 'Aviso aceptado por Meta'],
+  ['error', 'No se pudo enviar el aviso'],
+  ['incierto', 'Envío del aviso sin confirmar'],
+]);
 const measureKeys = ['alto', 'ancho', 'largo', 'peso'];
 const customMeasures = measureKeys.map(byId);
 const drawPackage = createPackagePreview(byId('caja-3d'));
@@ -249,13 +256,13 @@ function timeline(order) {
   return list;
 }
 
-function orderButton(label, order, onClick, appearance = 'secondary') {
+function orderButton(label, order, onClick, appearance) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = `button ${appearance}`;
   button.textContent = label;
   button.setAttribute('aria-label', `${label} ${order.codigo}`);
-  button.addEventListener('click', () => onClick(order));
+  button.addEventListener('click', event => onClick(order, event));
   return button;
 }
 
@@ -321,13 +328,20 @@ function renderOrder(order) {
     date.textContent = localDate.format(new Date(order.despachado_en));
     state.append(date);
   }
+  if (order.whatsapp_preparado_en || noticeLabels.has(order.aviso_whatsapp)) {
+    const notice = document.createElement('small');
+    notice.textContent = order.whatsapp_preparado_en ? 'Mensaje listo en WhatsApp' : `WhatsApp · ${noticeLabels.get(order.aviso_whatsapp)}`;
+    state.append(notice);
+  }
   const action = textCell(row, '');
   action.className = 'order-action';
   const actions = document.createElement('div');
   actions.className = 'row-actions';
   const label = order.despachado_en ? 'Ver pedido' : hasPackage(order) ? 'Editar' : 'Preparar';
-  actions.append(orderButton(label, order, editOrder));
+  actions.append(orderButton(label, order, editOrder, order.despachado_en ? 'view-action' : 'prepare-action'));
   if (isReady(order)) actions.append(orderButton('Marcar enviado', order, confirmShipment, 'dispatch-action'));
+  if (order.despachado_en) actions.append(orderButton('Volver a confirmar envío', order, confirmShipment, 'notice-action'));
+  if (order.aviso_whatsapp === 'error') actions.append(orderButton('Reintentar aviso', order, retryNotice, 'notice-action'));
   const deleteAction = orderButton('Eliminar', order, target => confirmDeletion([target]), 'ghost delete-action');
   deleteAction.setAttribute('aria-haspopup', 'dialog');
   actions.append(deleteAction);
@@ -506,7 +520,13 @@ function editOrder(order) {
 function confirmShipment(order) {
   if (loading) return;
   shipment = order;
+  const sent = Boolean(order.despachado_en);
   byId('codigo-despacho').textContent = order.codigo;
+  byId('titulo-despacho').textContent = sent ? 'Volver a confirmar envío' : 'Marcar como enviado';
+  byId('detalle-despacho').textContent = sent
+    ? 'Se abrirá otra vez el chat del destinatario con el mensaje listo para enviar.'
+    : 'Confirma que entregaste este pedido a Shalom. Se abrirá WhatsApp con el mensaje listo para enviar.';
+  shipmentSave.textContent = sent ? 'Abrir WhatsApp' : 'Confirmar envío';
   status('error-despacho');
   shipmentPackages?.dispose();
   shipmentPackages = createPackageList(byId('bultos-despacho'), catalog, order.codigo);
@@ -568,6 +588,21 @@ function updateOrders(pedidos) {
 function updateOrder(pedido) {
   updateOrders([pedido]);
   (byId(pedido.codigo)?.querySelector('.row-actions button') ?? search).focus({ preventScroll: true });
+}
+
+async function retryNotice(order, event) {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const { pedido } = await api('aviso-whatsapp', { method: 'PATCH', body: JSON.stringify({ codigo: order.codigo }) });
+    updateOrder(pedido);
+    status('estado-panel', `Se programó un nuevo intento de WhatsApp para ${order.codigo}.`);
+  } catch (error) {
+    if (error.status === 401) setLogin('La sesión venció. Vuelve a ingresar.');
+    else status('estado-panel', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function openBatch(action) {
@@ -743,22 +778,29 @@ shipmentDialog.addEventListener('close', () => {
 shipmentSave.addEventListener('click', async () => {
   if (!shipment || shipmentSave.disabled) return;
   const { codigo } = shipment;
+  const buttonLabel = shipmentSave.textContent;
   shipmentSave.disabled = true;
   shipmentCancel.disabled = true;
-  shipmentSave.textContent = 'Registrando…';
+  shipmentSave.textContent = 'Abriendo WhatsApp…';
   status('error-despacho');
+  // Reserva la pestaña durante el clic para que el navegador permita abrirla.
+  const chat = window.open('', '_blank');
+  if (chat) chat.opener = null;
   try {
-    const { pedido } = await api('despacho', { method: 'PATCH', body: JSON.stringify({ codigo }) });
+    const { pedido, enlace_whatsapp } = await api('despacho', { method: 'PATCH', body: JSON.stringify({ codigo }) });
     shipmentDialog.close();
     updateOrder(pedido);
-    status('estado-panel', `${codigo} marcado como enviado.`);
+    status('estado-panel', `${codigo} · Mensaje listo en WhatsApp.`);
+    if (chat && !chat.closed) chat.location.replace(enlace_whatsapp);
+    else window.location.assign(enlace_whatsapp);
   } catch (error) {
+    chat?.close();
     if (error.status === 401) setLogin('La sesión venció. Vuelve a ingresar.');
     else status('error-despacho', error.message, true);
   } finally {
     shipmentSave.disabled = false;
     shipmentCancel.disabled = false;
-    shipmentSave.textContent = 'Confirmar envío';
+    shipmentSave.textContent = buttonLabel;
   }
 });
 deletionCancel.addEventListener('click', () => deletionDialog.close());
