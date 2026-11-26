@@ -244,6 +244,7 @@ function buildMessage(shipment, code) {
     '',
     '👤 *Datos de recojo*',
     `*Recoge:* ${shipment.nombre}`,
+    `🪪 *DNI:* ${shipment.dni}`,
     `📱 *Celular:* ${shipment.celular}`,
   ].join('\n');
 }
