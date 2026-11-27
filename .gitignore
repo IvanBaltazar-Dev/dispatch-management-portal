@@ -16,6 +16,11 @@
 !/avisos-whatsapp/wrangler.jsonc
 !/avisos-whatsapp/worker.test.mjs
 !/site/
+!/site/eliminacion-de-datos/
+!/site/eliminacion-de-datos/index.html
+!/site/politica-de-privacidad/
+!/site/politica-de-privacidad/index.html
+!/site/privacidad.css
 !/site/panel/
 !/site/_headers
 !/site/_routes.json
