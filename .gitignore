@@ -20,6 +20,7 @@
 !/site/_headers
 !/site/_routes.json
 !/site/_worker.js
+!/site/documento-destinatario.js
 !/site/formulario.css
 !/site/formulario.js
 !/site/hero-despacho-yiwu.jpg

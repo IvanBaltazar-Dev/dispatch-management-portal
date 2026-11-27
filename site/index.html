@@ -11,7 +11,7 @@
   <link rel="preload" href="manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="formulario.css">
   <script src="yiwu-agencias-shalom.js" defer></script>
-  <script src="formulario.js" defer></script>
+  <script src="formulario.js" type="module"></script>
 </head>
 <body>
   <header class="site-header">
@@ -144,7 +144,7 @@
             <h3 id="resumen-persona-titulo"><i class="icon icon-person" aria-hidden="true"></i> Persona que recoge</h3>
             <p id="resumen-nombre" class="review-value"></p>
             <dl class="review-list review-contact">
-              <div><dt>Documento</dt><dd id="resumen-dni"></dd></div>
+              <div><dt id="resumen-tipo-documento"></dt><dd id="resumen-dni"></dd></div>
               <div><dt>Celular</dt><dd id="resumen-celular"></dd></div>
             </dl>
           </section>

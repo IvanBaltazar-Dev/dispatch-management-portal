@@ -1,4 +1,4 @@
-'use strict';
+import { tipoDocumento } from './documento-destinatario.js';
 
 const form = document.getElementById('despacho');
 const search = document.getElementById('busqueda');
@@ -17,6 +17,7 @@ const confirmLabel = confirmButton.querySelector('span');
 const editButton = document.getElementById('editar');
 const whatsappLink = document.getElementById('abrir-whatsapp');
 const orderStatus = document.getElementById('estado-pedido');
+const summaryDocumentType = document.getElementById('resumen-tipo-documento');
 const summaryFields = Object.fromEntries(['agencia', 'ubicacion', 'direccion', 'nombre', 'dni', 'celular']
   .map(field => [field, document.getElementById(`resumen-${field}`)]));
 
@@ -286,6 +287,7 @@ form.addEventListener('submit', event => {
     order = { id: crypto.randomUUID(), shipment };
   }
   for (const field of ['nombre', 'dni', 'celular']) summaryFields[field].textContent = shipment[field];
+  summaryDocumentType.textContent = tipoDocumento(shipment.dni);
   summaryFields.agencia.textContent = selectedAgency.name;
   summaryFields.ubicacion.textContent = selectedAgency.place;
   summaryFields.direccion.textContent = selectedAgency.street;

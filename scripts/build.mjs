@@ -10,11 +10,12 @@ async function version(name) {
 }
 
 async function versionImports(name) {
-  const file = asset(`panel/${name}`);
+  const file = asset(name);
   let source = await readFile(file, 'utf8');
-  const dependencies = new Set([...source.matchAll(/from '\.\/([a-z][a-z0-9-]*\.js)'/g)].map(match => match[1]));
+  const dependencies = new Set([...source.matchAll(/from '(\.{1,2}\/[a-z][a-z0-9-]*\.js)'/g)].map(match => match[1]));
   for (const dependency of dependencies) {
-    source = source.replaceAll(`from './${dependency}'`, `from './${dependency}?v=${await version(`panel/${dependency}`)}'`);
+    const tag = await version(new URL(dependency, file));
+    source = source.replaceAll(`from '${dependency}'`, `from '${dependency}?v=${tag}'`);
   }
   await writeFile(file, source);
 }
@@ -34,7 +35,7 @@ for (const file of siteFiles) {
   await mkdir(new URL('./', asset(file)), { recursive: true });
   await copyFile(new URL(file, source), asset(file));
 }
-for (const file of ['bultos.js', 'lote.js', 'revision-shalom.js', 'shalom-export.js', 'panel.js']) {
+for (const file of ['formulario.js', 'panel/bultos.js', 'panel/lote.js', 'panel/revision-shalom.js', 'panel/shalom-export.js', 'panel/panel.js']) {
   await versionImports(file);
 }
 

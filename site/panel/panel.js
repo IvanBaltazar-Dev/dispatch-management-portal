@@ -3,6 +3,7 @@ import { createPackagePreview } from './paquete-3d.js';
 import { createBatchEditor } from './lote.js';
 import { createShalomReview } from './revision-shalom.js';
 import { createPackageList, packagesOf, showPackageMeasures as measureUnits } from './bultos.js';
+import { tipoDocumento } from '../documento-destinatario.js';
 
 const byId = id => document.getElementById(id);
 const login = byId('login');
@@ -302,7 +303,7 @@ function renderOrder(order) {
   textCell(row, order.codigo, localDate.format(new Date(order.creado_en))).className = 'order-code';
   const recipient = textCell(row, order.nombre);
   const recipientDetails = document.createElement('small');
-  for (const value of [`Documento ${order.dni}`, phoneLabel(order.celular)]) {
+  for (const value of [`${tipoDocumento(order.dni)} ${order.dni}`, phoneLabel(order.celular)]) {
     const detail = document.createElement('span');
     detail.textContent = value;
     recipientDetails.append(detail);
@@ -494,7 +495,7 @@ function editOrder(order) {
   byId('pedido-agencia').textContent = `${order.agencia} · ${order.shalom_ubicacion || order.departamento}`;
   byId('pedido-direccion').textContent = order.direccion;
   byId('pedido-destinatario').textContent = order.nombre;
-  byId('pedido-documento').textContent = `Documento ${order.dni} · ${phoneLabel(order.celular)}`;
+  byId('pedido-documento').textContent = `${tipoDocumento(order.dni)} ${order.dni} · ${phoneLabel(order.celular)}`;
   byId('destino-no-exportable').hidden = Boolean(order.shalom_destino);
   const [first, ...others] = packagesOf(order);
   form.elements.mercaderia.value = first?.mercaderia || '';
