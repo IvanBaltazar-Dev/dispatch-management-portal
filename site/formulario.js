@@ -177,7 +177,7 @@ function renderAgencies() {
 function verifyName() {
   const fullName = /^\p{L}[\p{L}\p{M}.'’\-]*(?:\s+\p{L}[\p{L}\p{M}.'’\-]*)+$/u;
   const invalid = nameInput.value && !fullName.test(nameInput.value.trim());
-  nameInput.setCustomValidity(invalid ? 'Ingresa tus nombres y apellidos tal como figuran en el DNI.' : '');
+  nameInput.setCustomValidity(invalid ? 'Ingresa los nombres y apellidos de la persona que recoge.' : '');
 }
 
 function bindDigitLimit(input) {
@@ -244,7 +244,7 @@ function buildMessage(shipment, code) {
     '',
     '👤 *Datos de recojo*',
     `*Recoge:* ${shipment.nombre}`,
-    `🪪 *DNI:* ${shipment.dni}`,
+    `🪪 *Documento:* ${shipment.dni}`,
     `📱 *Celular:* ${shipment.celular}`,
   ].join('\n');
 }

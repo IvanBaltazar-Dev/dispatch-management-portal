@@ -77,6 +77,39 @@ function accepted() {
   return Response.json({ messages: [{ id: 'wamid.test' }] });
 }
 
+test('migra los documentos del destinatario sin perder pedidos, avisos ni códigos', async t => {
+  const { env, database } = testEnv(t);
+  const original = await createOrder(env, { dni: '01234567', notificar_whatsapp: true });
+  const removed = await createOrder(env);
+  database.prepare('DELETE FROM pedidos_despacho WHERE codigo = ?').run(removed);
+  await prepare(env, original);
+  database.prepare('UPDATE pedidos_despacho SET despachado_en = ? WHERE codigo = ?')
+    .run('2026-11-24T10:00:00.000Z', original);
+
+  const order = database.prepare('SELECT * FROM pedidos_despacho').get();
+  const notice = database.prepare('SELECT * FROM avisos_whatsapp').get();
+  assert.ok(notice);
+  const migration = readFileSync(new URL('../migrations/0001_documento_destinatario.sql', import.meta.url), 'utf8');
+  database.exec(`BEGIN; ${migration} COMMIT;`);
+  assert.deepEqual(database.prepare('SELECT * FROM pedidos_despacho').get(), order);
+  assert.deepEqual(database.prepare('SELECT * FROM avisos_whatsapp').get(), notice);
+  assert.deepEqual(database.prepare('PRAGMA foreign_key_check').all(), []);
+
+  const first = await createOrder(env, { dni: '01234567' });
+  assert.equal(first, 'YIWU-000003');
+  for (const dni of ['001234567', '20123456789']) {
+    const data = { solicitud: randomUUID(), dni };
+    const code = await createOrder(env, data);
+    assert.equal(await createOrder(env, data), code);
+    assert.equal(database.prepare('SELECT dni FROM pedidos_despacho WHERE codigo = ?').get(code).dni, dni);
+  }
+
+  for (const dni of ['1234567', '0123456789', '201234567890', 'A01234567', 12345678]) {
+    const response = await request(env, '/api/pedidos', 'POST', { dni }, 422);
+    assert.match(response.error, /carné de extranjería/);
+  }
+});
+
 test('solo programa un aviso por pedido autorizado cuando se marca enviado', async t => {
   const { env, database } = testEnv(t, `
     INSERT INTO pedidos_despacho (solicitud, agencia, departamento, direccion, nombre, dni, celular, busqueda,

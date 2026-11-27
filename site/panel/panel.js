@@ -302,7 +302,7 @@ function renderOrder(order) {
   textCell(row, order.codigo, localDate.format(new Date(order.creado_en))).className = 'order-code';
   const recipient = textCell(row, order.nombre);
   const recipientDetails = document.createElement('small');
-  for (const value of [`DNI ${order.dni}`, phoneLabel(order.celular)]) {
+  for (const value of [`Documento ${order.dni}`, phoneLabel(order.celular)]) {
     const detail = document.createElement('span');
     detail.textContent = value;
     recipientDetails.append(detail);
@@ -494,7 +494,7 @@ function editOrder(order) {
   byId('pedido-agencia').textContent = `${order.agencia} · ${order.shalom_ubicacion || order.departamento}`;
   byId('pedido-direccion').textContent = order.direccion;
   byId('pedido-destinatario').textContent = order.nombre;
-  byId('pedido-documento').textContent = `DNI ${order.dni} · ${phoneLabel(order.celular)}`;
+  byId('pedido-documento').textContent = `Documento ${order.dni} · ${phoneLabel(order.celular)}`;
   byId('destino-no-exportable').hidden = Boolean(order.shalom_destino);
   const [first, ...others] = packagesOf(order);
   form.elements.mercaderia.value = first?.mercaderia || '';

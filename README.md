@@ -20,6 +20,8 @@ Portal para registrar solicitudes de envío y organizar el despacho de pedidos. 
 
 Ejecuta `setup/esquema-d1.sql` al crear la base D1. Antes de publicar el panel, aplica `setup/avisos-whatsapp-d1.sql` y luego `setup/confirmacion-whatsapp-d1.sql` en esa base. Aplica cada migración una sola vez y conecta la base al proyecto con el nombre `DB`.
 
+Después de esas migraciones, ejecuta `npx wrangler d1 migrations apply yiwu-despachos --remote --config <archivo>` antes de publicar el formulario. Usa una configuración de Wrangler que vincule esa base D1 y apunte `migrations_dir` a `migrations/`. La migración amplía el documento del destinatario a 8, 9 u 11 dígitos y conserva los pedidos y avisos registrados.
+
 El formulario viene con el WhatsApp del asesor de YIWU configurado en el enlace de ayuda. Para cambiarlo, define `YIWU_WHATSAPP_NUMBER` como texto en formato internacional en **Variables and Secrets**. El formulario usa el número de esa variable al guardar el pedido y la compilación lo usa para el enlace de ayuda. Registra `YIWU_OWNER_USERNAME` como texto con el nombre de usuario del panel. Si omites esta variable, el usuario es `yiwu`.
 
 Ejecuta `setup/generar-acceso-panel.ps1` en PowerShell y registra el resultado `YIWU_OWNER_PASSWORD_HASH` como secreto de Cloudflare. Usa el parámetro `-ClavePropia` si prefieres escribir una contraseña de tu elección. Despliega de nuevo para aplicar la configuración.

@@ -91,20 +91,21 @@
             <div>
               <label for="nombre">Nombres y apellidos</label>
               <div class="field-control">
-                <input id="nombre" type="text" maxlength="120" placeholder="Tal como figuran en el DNI" required>
+                <input id="nombre" type="text" maxlength="120" placeholder="Escribe los nombres y apellidos" required>
                 <span class="field-check" aria-hidden="true" hidden></span>
                 <span class="field-status" role="status"></span>
               </div>
             </div>
             <div class="fields-inline">
               <div>
-                <label for="dni">DNI</label>
+                <label for="dni">Documento</label>
                 <div class="field-control">
-                  <input id="dni" type="text" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos"
-                         title="Ingresa exactamente 8 dígitos" required>
+                  <input id="dni" type="text" inputmode="numeric" maxlength="11" pattern="[0-9]{8,9}|[0-9]{11}" placeholder="Solo dígitos"
+                         aria-describedby="ayuda-documento" title="Ingresa 8 dígitos para DNI, 9 para carné de extranjería u 11 para RUC" required>
                   <span class="field-check" aria-hidden="true" hidden></span>
                   <span class="field-status" role="status"></span>
                 </div>
+                <p id="ayuda-documento" class="field-help">DNI (8 dígitos), carné de extranjería (9) o RUC (11).</p>
               </div>
               <div>
                 <label for="celular">Celular</label>
@@ -144,7 +145,7 @@
             <h3 id="resumen-persona-titulo"><i class="icon icon-person" aria-hidden="true"></i> Persona que recoge</h3>
             <p id="resumen-nombre" class="review-value"></p>
             <dl class="review-list review-contact">
-              <div><dt>DNI</dt><dd id="resumen-dni"></dd></div>
+              <div><dt>Documento</dt><dd id="resumen-dni"></dd></div>
               <div><dt>Celular</dt><dd id="resumen-celular"></dd></div>
             </dl>
           </section>
@@ -152,7 +153,7 @@
         <footer class="review-footer">
           <p id="instrucciones-revision" class="review-note review-warning">
             <span aria-hidden="true">⚠️</span>
-            <span>Antes de confirmar, revisa que la dirección de la agencia, el nombre completo y el número de contacto sean correctos.</span>
+            <span>Antes de confirmar, revisa la dirección de la agencia y los datos de la persona que recoge.</span>
           </p>
           <p id="estado-pedido" class="review-note" role="status" hidden></p>
           <div class="review-actions">

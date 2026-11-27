@@ -166,6 +166,7 @@ input::placeholder { color: var(--muted); font-weight: 620; opacity: 1; }
 input:focus { border-color: #387250; background: #f1f7f2; }
 input:user-invalid { border-color: var(--error); }
 .field-control { position: relative; }
+.field-help { margin: .38rem 0 0; font-size: .78rem; line-height: 1.35; }
 .field-control input { padding-inline-end: 2.55rem; }
 .field-control:has(.field-check:not([hidden])) input { border-color: #6a9978; background: #e8f4eb; }
 .field-status {

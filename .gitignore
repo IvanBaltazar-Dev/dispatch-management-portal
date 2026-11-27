@@ -4,6 +4,8 @@
 !/README.md
 !/scripts/
 !/scripts/build.mjs
+!/migrations/
+!/migrations/0001_documento_destinatario.sql
 !/setup/
 !/setup/esquema-d1.sql
 !/setup/avisos-whatsapp-d1.sql

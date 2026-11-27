@@ -540,10 +540,12 @@ export default {
       celular: body.celular,
       notificar_whatsapp: body.notificar_whatsapp === undefined ? false : body.notificar_whatsapp,
     };
+    if (typeof order.dni !== 'string' || !/^(?:[0-9]{8,9}|[0-9]{11})$/.test(order.dni)) {
+      return json({ error: 'Ingresa 8 dígitos para DNI, 9 para carné de extranjería u 11 para RUC.' }, 422);
+    }
     if (typeof order.solicitud !== 'string' || !requestId.test(order.solicitud) ||
         !order.agencia || !order.departamento || !order.direccion ||
         order.nombre.length > 120 || !fullName.test(order.nombre) ||
-        typeof order.dni !== 'string' || !/^\d{8}$/.test(order.dni) ||
         typeof order.celular !== 'string' || !/^9\d{8}$/.test(order.celular) ||
         typeof order.notificar_whatsapp !== 'boolean') {
       return json({ error: 'Datos inválidos' }, 422);
