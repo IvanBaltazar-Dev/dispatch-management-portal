@@ -148,7 +148,12 @@ main { padding-block: 1.8rem 3rem; }
 .card-heading h2 { font-size: clamp(1.13rem, 2vw, 1.46rem); font-weight: 800; letter-spacing: -.05em; line-height: 1.18; }
 .carrier-card .card-icon { color: var(--shalom-ink); background: var(--shalom-wash); border-color: #f2dbd9; }
 .fields { display: grid; gap: 1rem; }
-.fields-inline { display: grid; grid-template-columns: minmax(0, .84fr) minmax(0, 1.16fr); gap: .77rem; }
+.fields-inline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  align-items: end;
+  gap: .9rem 1rem;
+}
 label { display: block; margin-bottom: .37rem; font-size: .9rem; font-weight: 760; }
 
 input {
@@ -421,7 +426,6 @@ dialog::backdrop { background: #10271dc9; backdrop-filter: blur(3px); }
 @media (max-width: 21.5rem) {
   .header-channel { max-width: 8.4rem; line-height: 1.17; }
   .hero-carrier img { width: 5.72rem; }
-  .fields-inline { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 26rem) {
